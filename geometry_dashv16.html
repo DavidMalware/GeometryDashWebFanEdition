@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash Remake - v1.6</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pusab&family=Righteous&family=Russo+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Russo One', 'Righteous', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            background-color: #000;
+        }
+        /* Custom scrollbar for Editor/Online panels and Customization list */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        /* Pulse Animation */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 4s infinite ease-in-out;
+        }
+        /* Glowing text effect */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        .neon-text-green {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.4);
+        }
+        .neon-text-gold {
+            text-shadow: 0 0 10px rgba(234, 179, 8, 0.8), 0 0 20px rgba(234, 179, 8, 0.4);
+        }
+        .neon-text-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+        /* Editor item selector outline */
+        .editor-item-selected {
+            outline: 3px solid #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center relative p-0 m-0">
+
+    <!-- GAME OVERLAYS / SCREEN MANAGER -->
+    <div id="app-container" class="relative w-full max-w-5xl aspect-[16/9] bg-slate-900 overflow-hidden shadow-2xl rounded-2xl border-4 border-slate-700">
+        
+        <!-- MAIN MENU PANEL -->
+        <div id="menu-screen" class="absolute inset-0 flex flex-col justify-between items-center p-8 z-10 bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950">
+            <!-- Background pulse grid -->
+            <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+            
+            <!-- Title -->
+            <div class="text-center mt-6 z-10 animate-pulse-slow">
+                <h1 class="text-6xl md:text-7xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 drop-shadow-lg neon-text">
+                    GEOMETRY DASH
+                </h1>
+                <p class="text-sm text-cyan-300/80 tracking-widest mt-2 uppercase">Web Fan Edition</p>
+            </div>
+
+            <!-- Dashboard Center Buttons -->
+            <div class="flex items-center gap-12 z-10 my-auto">
+                <!-- Customize Button -->
+                <button onclick="switchScreen('customize')" class="group relative flex flex-col items-center justify-center w-24 h-24 bg-gradient-to-tr from-yellow-500 to-amber-400 hover:from-yellow-400 hover:to-amber-300 border-4 border-white rounded-2xl shadow-xl transition-all duration-200 transform hover:scale-110 active:scale-95">
+                    <i class="fa-solid fa-paint-roller text-4xl text-white drop-shadow-md"></i>
+                    <span class="absolute -bottom-7 text-xs font-bold text-yellow-300 uppercase opacity-0 group-hover:opacity-100 transition-opacity">Customize</span>
+                </button>
+
+                <!-- PLAY Main Button -->
+                <button onclick="switchScreen('level-select')" class="group relative flex items-center justify-center w-40 h-40 bg-gradient-to-tr from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 border-8 border-white rounded-full shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-200 transform hover:scale-110 active:scale-95">
+                    <i class="fa-solid fa-play text-7xl text-white ml-3 drop-shadow-lg"></i>
+                </button>
+
+                <!-- Hammer & Screw / Creator Button -->
+                <button onclick="switchScreen('editor-menu')" class="group relative flex flex-col items-center justify-center w-24 h-24 bg-gradient-to-tr from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 border-4 border-white rounded-2xl shadow-xl transition-all duration-200 transform hover:scale-110 active:scale-95">
+                    <i class="fa-solid fa-screwdriver-wrench text-4xl text-white drop-shadow-md"></i>
+                    <span class="absolute -bottom-7 text-xs font-bold text-cyan-300 uppercase opacity-0 group-hover:opacity-100 transition-opacity">Creator</span>
+                </button>
+            </div>
+
+            <!-- Footer / Audio Controls / Info / News -->
+            <div class="w-full flex justify-between items-center z-10 text-slate-400 text-sm">
+                <div class="flex gap-2">
+                    <button onclick="toggleSound()" id="sound-btn" class="flex items-center gap-2 px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg hover:bg-slate-700 transition">
+                        <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                        <span id="sound-text">Snd: ON</span>
+                    </button>
+                    <!-- NEWS Changelog Button -->
+                    <button onclick="openNewsModal()" class="flex items-center gap-2 px-4 py-2 bg-amber-600/90 hover:bg-amber-500 text-white font-bold rounded-lg border border-amber-500 transition shadow-lg">
+                        <i class="fa-solid fa-newspaper text-white"></i>
+                        <span>News</span>
+                    </button>
+                </div>
+                <div class="text-xs tracking-wider opacity-70">
+                    Spacebar / Click / Touch to jump, fly, bounce, or flap UFO!
+                </div>
+                <div class="text-right">
+                    <span class="text-emerald-400 font-bold">v1.6</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL SELECT SCREEN -->
+        <div id="level-select-screen" class="absolute inset-0 hidden flex-col justify-between p-6 z-10 bg-gradient-to-b from-slate-900 to-indigo-950">
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+                <button onclick="switchScreen('menu')" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-600 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Menu
+                </button>
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 neon-text">SELECT LEVEL</h2>
+                <div class="w-20"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Level Card Carousel / Grid -->
+            <div class="my-auto flex items-center justify-center gap-4 overflow-x-auto py-4 px-2 max-w-full">
+                <!-- Back Arrow -->
+                <button onclick="scrollLevels(-1)" class="p-3 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full transition border border-slate-700"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+
+                <!-- Cards Container -->
+                <div id="level-cards-container" class="flex gap-6 overflow-hidden transition-all duration-300 max-w-4xl px-4 py-2">
+                    <!-- Cards are dynamically rendered by JS -->
+                </div>
+
+                <!-- Forward Arrow -->
+                <button onclick="scrollLevels(1)" class="p-3 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full transition border border-slate-700"><i class="fa-solid fa-chevron-right text-xl"></i></button>
+            </div>
+
+            <!-- Stats Ticker -->
+            <div class="text-center text-xs text-slate-400 mt-2">
+                Double-click on custom inventory icons inside customization menu to inspect challenges!
+            </div>
+        </div>
+
+        <!-- CUSTOMIZE ICON SCREEN -->
+        <div id="customize-screen" class="absolute inset-0 hidden flex-col justify-between p-6 z-10 bg-gradient-to-b from-slate-900 to-slate-950">
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+                <button onclick="switchScreen('menu')" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-600 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Menu
+                </button>
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-400 neon-text-gold">CHARACTER ICON CUSTOMIZATION</h2>
+                <div class="w-20"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Customization Panel Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto items-stretch h-[70%] overflow-hidden">
+                <!-- Preview Canvas Box -->
+                <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center relative">
+                    <div class="text-xs uppercase text-slate-400 tracking-wider mb-2">Live Preview</div>
+                    <div class="flex flex-col gap-6 items-center justify-center p-6 bg-slate-900/80 rounded-xl w-full max-w-[220px] aspect-square border-2 border-slate-600">
+                        <canvas id="preview-canvas" width="120" height="120" class="drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"></canvas>
+                    </div>
+                    <div id="selected-icon-info" class="text-center mt-3">
+                        <div id="selected-name" class="font-bold text-yellow-400 text-base">Cube 1 - Default</div>
+                        <div id="selected-desc" class="text-slate-400 text-xs mt-1 italic max-w-xs">Simple starter cube. Unleash your jumps!</div>
+                    </div>
+                </div>
+
+                <!-- Selection Panel -->
+                <div class="col-span-2 bg-slate-800/30 border border-slate-700 rounded-xl p-4 flex flex-col overflow-hidden">
+                    <!-- Tabs -->
+                    <div class="flex gap-1.5 border-b border-slate-700 pb-3 mb-3 select-none">
+                        <button onclick="setCustomizeTab('cube')" id="tab-cube" class="flex-1 py-1.5 font-bold rounded-lg bg-yellow-500 text-slate-950 shadow-md text-xs">
+                            <i class="fa-solid fa-cube mr-1"></i> Cubes
+                        </button>
+                        <button onclick="setCustomizeTab('ship')" id="tab-ship" class="flex-1 py-1.5 font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition text-xs">
+                            <i class="fa-solid fa-plane mr-1"></i> Ships
+                        </button>
+                        <button onclick="setCustomizeTab('colors')" id="tab-colors" class="flex-1 py-1.5 font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition text-xs">
+                            <i class="fa-solid fa-palette mr-1"></i> Palette
+                        </button>
+                    </div>
+
+                    <!-- Icons Grid scrollable -->
+                    <div id="icons-grid-container" class="flex-1 overflow-y-auto grid grid-cols-4 sm:grid-cols-5 gap-3 p-1 max-h-[190px]">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Colors Selection (hidden by default) -->
+                    <div id="colors-selection-container" class="hidden flex-1 overflow-y-auto flex-col justify-start gap-4 pr-1">
+                        <div>
+                            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Primary Color</div>
+                            <div class="flex gap-2 flex-wrap" id="primary-colors-box"></div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Secondary Color</div>
+                            <div class="flex gap-2 flex-wrap" id="secondary-colors-box"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 mt-2">
+                Tip: Scroll inside the selections grid to see more customization options!
+            </div>
+        </div>
+
+        <!-- HAMMER & SCREW (EDITOR/ONLINE SCREEN) -->
+        <div id="editor-menu-screen" class="absolute inset-0 hidden flex-col justify-between p-6 z-10 bg-gradient-to-b from-slate-900 to-indigo-950">
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+                <button onclick="switchScreen('menu')" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-600 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Menu
+                </button>
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 neon-text">CREATOR HUB</h2>
+                <div class="w-20"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Two Columns: Left (Editor), Right (Online Levels List with Search Filters) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-auto items-stretch h-[75%] overflow-hidden">
+                <!-- Create Custom Level Card -->
+                <div class="bg-gradient-to-br from-indigo-950/80 to-slate-900/90 border border-indigo-700/50 rounded-2xl p-6 flex flex-col justify-between relative shadow-lg">
+                    <div class="absolute -right-6 -top-6 text-indigo-500/20 text-9xl font-bold"><i class="fa-solid fa-cubes"></i></div>
+                    <div class="z-10">
+                        <div class="flex items-center gap-3">
+                            <span class="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/30 text-indigo-400 text-2xl"><i class="fa-solid fa-hammer"></i></span>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Level Builder</h3>
+                                <p class="text-xs text-indigo-300">Design, playtest, and share your own masterpieces</p>
+                            </div>
+                        </div>
+                        <p class="text-slate-400 text-xs mt-4 leading-relaxed">
+                            Draw customizable grids, place spikes, speed jump pads, gravity portals, UFO portals, and mirror portals. Push your friends to complete your creations!
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex flex-col gap-2 z-10">
+                        <button onclick="openNewEditorModal()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Design New Level
+                        </button>
+                        <button onclick="editExistingLevel()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-pen-to-square"></i> Open Draft Level
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Online Levels Card -->
+                <div class="bg-gradient-to-br from-slate-900/90 to-cyan-950/40 border border-cyan-800/30 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative">
+                    <div class="absolute -right-6 -top-6 text-cyan-500/10 text-9xl font-bold"><i class="fa-solid fa-globe"></i></div>
+                    
+                    <div class="z-10 flex flex-col h-full overflow-hidden">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/30 text-cyan-400 text-xl"><i class="fa-solid fa-earth-americas"></i></span>
+                            <div>
+                                <h3 class="text-lg font-bold text-white leading-tight">Online Maps</h3>
+                                <p class="text-[11px] text-cyan-300">Play levels designed by the community</p>
+                            </div>
+                        </div>
+
+                        <!-- SEARCH & DIFFICULTY FILTER CONTROLS -->
+                        <div class="flex gap-2 my-2 select-none">
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <input type="text" id="online-search-input" oninput="renderOnlineLevelsList()" placeholder="Search maps by title..." class="w-full bg-slate-850/90 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                            </div>
+                            <select id="online-difficulty-filter" onchange="renderOnlineLevelsList()" class="bg-slate-850/90 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                                <option value="ALL">All Diff</option>
+                                <option value="N/R">N/R (Not Rated)</option>
+                                <option value="Easy">Easy</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Hard">Hard</option>
+                                <option value="Harder">Harder</option>
+                                <option value="Insane">Insane</option>
+                                <option value="Demon">Demon</option>
+                            </select>
+                        </div>
+                        
+                        <!-- List Container -->
+                        <div id="online-levels-list" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 max-h-[140px] md:max-h-[170px] mt-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 mt-2">
+                Unlocks Available: Complete 10 Online Levels in Normal Mode for Cube 12, or Practice Mode for Cube 13!
+            </div>
+        </div>
+
+        <!-- NEW LEVEL BUILDER MODAL -->
+        <div id="new-level-modal" class="absolute inset-0 hidden items-center justify-center bg-black/80 z-40 p-4">
+            <div class="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+                <h3 class="text-lg font-bold text-white mb-2 text-center"><i class="fa-solid fa-circle-plus text-indigo-400 mr-2"></i>Create Custom Map</h3>
+                <p class="text-xs text-slate-400 text-center mb-4">Set your parameters to launch the constructor</p>
+                
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-semibold uppercase">Level Title</label>
+                        <input type="text" id="editor-title-input" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-indigo-500" value="My Crazy Level" maxlength="24">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-semibold uppercase">Initial Mode</label>
+                            <select id="editor-mode-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                <option value="cube">Cube</option>
+                                <option value="ship">Ship</option>
+                                <option value="ball">Ball</option>
+                                <option value="ufo">UFO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-semibold uppercase">Difficulty</label>
+                            <select id="editor-difficulty-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                <option value="N/R">N/R (Not Rated)</option>
+                                <option value="Easy">Easy</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Hard">Hard</option>
+                                <option value="Harder">Harder</option>
+                                <option value="Insane">Insane</option>
+                                <option value="Demon">Demon</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-6">
+                    <button onclick="closeNewEditorModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition">Cancel</button>
+                    <button onclick="startLevelEditor()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-sm transition">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL EDITOR INTERFACE -->
+        <div id="level-editor-screen" class="absolute inset-0 hidden flex flex-col bg-slate-950 z-30">
+            <!-- Top Bar -->
+            <div class="flex justify-between items-center bg-slate-900/95 border-b border-slate-800 px-4 py-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <button onclick="exitEditorToCreatorHub()" class="flex items-center gap-1 text-slate-400 hover:text-white transition bg-slate-800 px-3 py-1 rounded border border-slate-700">
+                        <i class="fa-solid fa-circle-xmark text-red-400"></i> Back
+                    </button>
+                    <span id="editor-current-title" class="font-bold text-cyan-400 tracking-wide">My Level Draft</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="clearEditorGrid()" class="text-xs bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-200 px-3 py-1 rounded transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Clear Canvas
+                    </button>
+                    <button onclick="playtestEditorLevel()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1.5 rounded-lg transition flex items-center gap-1 shadow-md">
+                        <i class="fa-solid fa-play text-[10px]"></i> Playtest
+                    </button>
+                    <button onclick="publishEditorLevel()" class="text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-1.5 rounded-lg transition flex items-center gap-1 shadow-md">
+                        <i class="fa-solid fa-globe text-[10px]"></i> Publish to Online
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace: Level Grid & Side Toolbar -->
+            <div class="flex-1 flex overflow-hidden relative">
+                <!-- Left Sidebar: Object Palette -->
+                <div class="w-32 bg-slate-900 border-r border-slate-800 flex flex-col p-2 select-none overflow-y-auto">
+                    <div class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest text-center mb-2 border-b border-slate-800 pb-1">PALETTE</div>
+                    
+                    <div class="flex flex-col gap-1.5" id="palette-container">
+                        <!-- Custom rendered palette items -->
+                    </div>
+                </div>
+
+                <!-- Center: Editing Canvas Container with Grid -->
+                <div class="flex-1 overflow-x-auto overflow-y-hidden bg-slate-950 flex flex-col relative" id="editor-viewport-container">
+                    <!-- Vertical grid column numbers -->
+                    <div class="w-full flex select-none" id="grid-coordinates"></div>
+                    <!-- Editor Grid Work-field -->
+                    <div class="flex-1 relative cursor-crosshair overflow-hidden" id="editor-grid">
+                        <!-- Items rendered via Javascript -->
+                        <canvas id="editor-grid-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Editor Helper Ticker -->
+            <div class="bg-slate-900 border-t border-slate-800 px-4 py-1 text-slate-400 text-[10px] flex justify-between select-none">
+                <div>Tip: Scroll horizontally in the grid with mousewheel. Click grid cells to draw/toggle selected object.</div>
+                <div>Map Max Length: <span class="text-cyan-400 font-bold">120 tiles</span></div>
+            </div>
+        </div>
+
+        <!-- PLAY/GAMEPLAY SCREEN -->
+        <div id="gameplay-screen" class="absolute inset-0 hidden flex-col justify-between z-20">
+            <!-- HUD top overlay -->
+            <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-20 select-none">
+                <!-- Back / Exit -->
+                <button onclick="confirmExitGame()" class="flex items-center gap-1 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold px-3 py-1.5 rounded border border-slate-700 transition">
+                    <i class="fa-solid fa-circle-chevron-left text-cyan-400"></i> Exit
+                </button>
+
+                <!-- Level Progress Indicator -->
+                <div class="flex flex-col items-center">
+                    <div id="gameplay-level-title" class="text-white text-base font-extrabold tracking-wider text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Stereo Madness</div>
+                    <div class="w-48 bg-slate-950/60 h-2.5 rounded-full border border-slate-700 mt-1 overflow-hidden">
+                        <div id="level-progress-bar" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full w-0 transition-all duration-75"></div>
+                    </div>
+                    <span id="level-progress-pct" class="text-[10px] font-bold text-cyan-300 mt-0.5">0%</span>
+                </div>
+
+                <!-- Practice Mode Control -->
+                <div id="practice-controls" class="flex gap-1.5">
+                    <!-- Toggle Practice Button -->
+                    <button id="practice-toggle-btn" onclick="togglePracticeMode()" class="px-3 py-1.5 rounded-md font-bold text-xs bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-diamond text-green-400"></i> Practice: Off
+                    </button>
+                    <!-- Gem Place Checkpoint -->
+                    <button id="practice-place-btn" onclick="placeCheckpoint()" class="hidden w-8 h-8 rounded-md bg-green-600 hover:bg-green-500 text-white font-bold text-sm transition items-center justify-center shadow-lg border border-white/20">
+                        <i class="fa-solid fa-diamond"></i>
+                    </button>
+                    <!-- Gem Delete Checkpoint -->
+                    <button id="practice-delete-btn" onclick="deleteCheckpoint()" class="hidden w-8 h-8 rounded-md bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition items-center justify-center shadow-lg border border-white/20">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Middle Canvas Container -->
+            <canvas id="game-canvas" class="w-full h-full block bg-cyan-950"></canvas>
+
+            <!-- Bottom Left Attempt Counter -->
+            <div id="attempt-indicator" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 text-white font-bold text-2xl tracking-widest text-center select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] scale-120 opacity-0 pointer-events-none transition-all duration-300">
+                ATTEMPT 1
+            </div>
+        </div>
+
+        <!-- NOTIFICATION BANNER MODAL -->
+        <div id="custom-modal" class="absolute inset-0 hidden items-center justify-center bg-black/75 z-50 p-4 transition-all">
+            <div id="modal-box" class="bg-slate-900 border-2 border-cyan-500 rounded-2xl p-6 max-w-md w-full text-center shadow-2xl scale-95 transform transition-transform duration-200">
+                <div id="modal-icon-container" class="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-3xl mb-4">
+                    <i id="modal-icon" class="fa-solid fa-circle-check"></i>
+                </div>
+                <h3 id="modal-title" class="text-xl font-bold text-white mb-2">Level Completed!</h3>
+                <p id="modal-desc" class="text-slate-400 text-sm mb-6 leading-relaxed">Congrats!</p>
+                
+                <button onclick="closeModal()" id="modal-btn" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-500 hover:to-blue-400 text-white font-bold rounded-xl shadow-lg transition">
+                    Fantastic!
+                </button>
+            </div>
+        </div>
+
+        <!-- CHANGELOG / NEWS MODAL -->
+        <div id="news-modal" class="absolute inset-0 hidden items-center justify-center bg-black/85 z-50 p-4">
+            <div class="bg-slate-900 border-2 border-amber-500 rounded-2xl p-6 max-w-xl w-full flex flex-col h-[80%] shadow-2xl">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
+                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 flex items-center gap-2">
+                        <i class="fa-solid fa-newspaper text-amber-400"></i> GD Update Changelogs
+                    </h3>
+                    <button onclick="closeNewsModal()" class="text-slate-400 hover:text-white text-lg transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto text-slate-300 text-xs space-y-5 pr-2">
+                    <!-- v1.6 -->
+                    <div class="border-l-2 border-amber-500 pl-3">
+                        <h4 class="font-bold text-sm text-yellow-400">v1.6 - The UFO Update (Current)</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Added **Level 12: Theory of Everything** (Insane) presenting dense hazard corridors and anti-gravity switches!</li>
+                            <li>Introduced **UFO Gamemode**: Press Space/Click to flap upward like a flappy disc while fighting gravity constraints.</li>
+                            <li>Added **Ship Customization**: Explore custom Ships 1-4 with unique unlocks.</li>
+                            <li>Added **Cube 25 (Theory of Nothing)** unlocked by clearing Level 12 in Practice Mode.</li>
+                            <li>Implemented **Live Customized Icon Previews** directly on level selectors and online map drawers matching your color selections in real time!</li>
+                            <li>Added this interactive **News Button** archive panel!</li>
+                        </ul>
+                    </div>
+
+                    <!-- v1.5.5 -->
+                    <div class="border-l-2 border-purple-500 pl-3">
+                        <h4 class="font-bold text-sm text-purple-400">v1.5.5 - The Demon Update</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Added **Level 11: Clutterfunk** (Insane) featuring rotating Saw Blades and scale shifting.</li>
+                            <li>Added **Saw Blades** hazards and **Mini / Normal Size Portals** to shrink or restore player scale.</li>
+                            <li>Added canvas-rendered **Demon Difficulty Face** directly modeled off **`image_bf7f5e.png`**.</li>
+                            <li>Seeded 5 legendary online Demon stages: *The Nightmare*, *Bloodbath*, *DeCode*, *Nine Circles*, and *Sonic Wave*.</li>
+                        </ul>
+                    </div>
+
+                    <!-- v1.5 -->
+                    <div class="border-l-2 border-indigo-500 pl-3">
+                        <h4 class="font-bold text-sm text-indigo-400">v1.5 - The Blue Orb Update</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Added **Level 10: XStep** (Insane) introducing extreme reflex tunnels.</li>
+                            <li>Added **Blue Jump Pads** and **Blue Orbs** to flip gravity mid-air upon collision.</li>
+                            <li>Fully updated **Difficulty faces** based on standard designs in **`image_1a16c4.png`**.</li>
+                            <li>Added Cubes 23 & 24.</li>
+                        </ul>
+                    </div>
+
+                    <!-- v1.4 -->
+                    <div class="border-l-2 border-pink-500 pl-3">
+                        <h4 class="font-bold text-sm text-pink-400">v1.4 - The Ball Update</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Added **Level 9: Cycles** (Insane) with deep purple visual grids.</li>
+                            <li>Added **Ball Portal & Ball Gamemode** to flip gravity smoothly on any flat surface.</li>
+                            <li>Added double-click inventory spec inspect modals.</li>
+                            <li>Added Cubes 21 & 22.</li>
+                        </ul>
+                    </div>
+
+                    <!-- v1.3 -->
+                    <div class="border-l-2 border-cyan-500 pl-3">
+                        <h4 class="font-bold text-sm text-cyan-400">v1.3 - Horizontal Mirrors</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Added **Level 8: Time Machine** (Harder) featuring the **Mirror Portal** that flips screen perspectives!</li>
+                            <li>Added search filters in Creator hub.</li>
+                        </ul>
+                    </div>
+
+                    <!-- v1.0 - v1.2 -->
+                    <div class="border-l-2 border-slate-500 pl-3">
+                        <h4 class="font-bold text-sm text-slate-400">v1.0 - v1.2 - Release Edition</h4>
+                        <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400">
+                            <li>Initial core release featuring Stereo Madness to Jumper official maps, draft constructor editor, practice checkpoints, and retro Web Audio synthesizer sounds.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+                    <button onclick="closeNewsModal()" class="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition text-xs shadow-md">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN GAME JS SCRIPT -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        function playSynthSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(380, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'pad') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 0.22);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'orb') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.linearRampToValueAtTime(900, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'crash') {
+                    const bufferSize = audioCtx.sampleRate * 0.4;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(600, now);
+                    filter.frequency.exponentialRampToValueAtTime(20, now + 0.35);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+
+                    noise.start(now);
+                    noise.stop(now + 0.38);
+                } else if (type === 'portal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(150, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+                    osc.start(now);
+                    osc.stop(now + 0.26);
+                } else if (type === 'complete') {
+                    const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    const durations = [0.1, 0.1, 0.1, 0.3];
+                    let delay = 0;
+                    
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + delay);
+                        noteGain.gain.setValueAtTime(0.15, now + delay);
+                        noteGain.gain.exponentialRampToValueAtTime(0.005, now + delay + durations[idx]);
+                        
+                        noteOsc.start(now + delay);
+                        noteOsc.stop(now + delay + durations[idx]);
+                        delay += 0.12;
+                    });
+                }
+            } catch (err) {
+                console.warn("Audio Context launch failed or blocked: ", err);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            const text = document.getElementById('sound-text');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                text.innerText = 'Snd: ON';
+                playSynthSound('jump');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                text.innerText = 'Snd: OFF';
+            }
+        }
+
+        const USER_PROGRESS = {
+            levelsCompleted: {},    // { levelId: { normal: true, practice: true } }
+            playedLevels: {},       // { levelId: { normal: true, practice: true } }
+            customCompletedNormal: 0,
+            customCompletedPractice: 0,
+            selectedCube: 1,
+            selectedShip: 1,
+            primaryColor: '#00ffff',
+            secondaryColor: '#ff007f'
+        };
+
+        const COLOR_SWATCHES = [
+            '#00ffff', '#ff007f', '#22c55e', '#eab308', '#a855f7',
+            '#f97316', '#3b82f6', '#ec4899', '#ffffff', '#000000'
+        ];
+
+        let currentLevelScrollIdx = 0;
+        let customLevels = [];
+        let draftLevel = null;
+
+        const CUBES_DATA = [
+            { id: 1, name: "Cube 1 (Default)", desc: "Simple starter block. Jump on neon grid.", type: "default" },
+            { id: 2, name: "Cube 2 (Smiley)", desc: "A smiley face built for gravity-defying leaps.", type: "default" },
+            { id: 3, name: "Cube 3 (X-Cross)", desc: "Branded with a geometric cross logo.", type: "default" },
+            { id: 4, name: "Cube 4 (Concentric)", desc: "Multiple overlapping squares inside.", type: "default" },
+            { id: 5, name: "Cube 5 (Aggressive)", desc: "Beat Stereo Madness in Normal Mode to unlock.", type: "unlock-normal", levelId: 1 },
+            { id: 6, name: "Cube 6 (Shades)", desc: "Beat Back On Track in Normal Mode to unlock.", type: "unlock-normal", levelId: 2 },
+            { id: 7, name: "Cube 7 (Alien)", desc: "Beat Polargeist in Normal Mode to unlock.", type: "unlock-normal", levelId: 3 },
+            { id: 8, name: "Cube 8 (Pixel)", desc: "Beat Dry Out in Normal Mode to unlock.", type: "unlock-normal", levelId: 4 },
+            { id: 9, name: "Cube 9 (Maze)", desc: "Beat Base After Base in Normal Mode to unlock.", type: "unlock-normal", levelId: 5 },
+            { id: 10, name: "Cube 10 (Star)", desc: "Beat Can't Let Go in Normal Mode to unlock.", type: "unlock-normal", levelId: 6 },
+            { id: 11, name: "Cube 11 (Fox-Ears)", desc: "Beat Jumper in Normal Mode to unlock.", type: "unlock-normal", levelId: 7 },
+            { id: 12, name: "Cube 12 (Master)", desc: "Beat 10 custom online levels in Normal Mode.", type: "unlock-online-normal", count: 10 },
+            { id: 13, name: "Cube 13 (Not Master)", desc: "Beat 10 custom online levels in Practice Mode.", type: "unlock-online-practice", count: 10 },
+            { id: 14, name: "Cube 14 (Stereo Bump)", desc: "Beat Stereo Madness in Practice Mode to unlock.", type: "unlock-practice", levelId: 1 },
+            { id: 15, name: "Cube 15 (Wii Are Back)", desc: "Beat Back On Track in Practice Mode to unlock.", type: "unlock-practice", levelId: 2 },
+            { id: 16, name: "Cube 16 (PolarBear)", desc: "Beat Polargeist in Practice Mode to unlock.", type: "unlock-practice", levelId: 3 },
+            { id: 17, name: "Cube 17 (Whooshh)", desc: "Beat Dry Out in Practice Mode to unlock.", type: "unlock-practice", levelId: 4 },
+            { id: 18, name: "Cube 18 (Siuu After Siuu)", desc: "Beat Base After Base in Practice Mode to unlock.", type: "unlock-practice", levelId: 5 },
+            { id: 19, name: "Cube 19 (No Escape)", desc: "Beat Can't Let Go in Practice Mode to unlock.", type: "unlock-practice", levelId: 6 },
+            { id: 20, name: "Cube 20 (Walker)", desc: "Beat Jumper in Practice Mode to unlock.", type: "unlock-practice", levelId: 7 },
+            { id: 21, name: "Cube 21 (Cycles!)", desc: "Beat Cycles in Normal Mode to unlock.", type: "unlock-normal", levelId: 9 },
+            { id: 22, name: "Cube 22 (Loops)", desc: "Beat Cycles in Practice Mode to unlock.", type: "unlock-practice", levelId: 9 },
+            { id: 23, name: "Cube 23 (XStep!)", desc: "Play or Beat XStep in Normal Mode to unlock.", type: "unlock-play-normal", levelId: 10 },
+            { id: 24, name: "Cube 24 (YStep)", desc: "Play or Beat XStep in Practice Mode to unlock.", type: "unlock-play-practice", levelId: 10 },
+            { id: 25, name: "Cube 25 (Theory of Nothing)", desc: "Beat Theory of Everything in Practice Mode to unlock.", type: "unlock-practice", levelId: 12 }
+        ];
+
+        const SHIPS_DATA = [
+            { id: 1, name: "Ship 1 (Default)", desc: "Classic delta-wing rocket glider.", type: "default" },
+            { id: 2, name: "Ship 2 (Clutterfunk!)", desc: "Beat Clutterfunk in Normal Mode to unlock.", type: "unlock-normal", levelId: 11 },
+            { id: 3, name: "Ship 3 (Clutterphonk)", desc: "Beat Clutterfunk in Practice Mode to unlock.", type: "unlock-practice", levelId: 11 },
+            { id: 4, name: "Ship 4 (Theory of Everything!)", desc: "Beat Theory of Everything in Normal Mode to unlock.", type: "unlock-normal", levelId: 12 }
+        ];
+
+        const OFFICIAL_LEVELS = [
+            {
+                id: 1,
+                name: "Stereo Madness",
+                difficulty: "Easy",
+                color: "#1e3a8a",
+                introText: "Stereo Madness introduces basic blocks, standard spikes, and Ship Portal transformations.",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'block', x: 300, y: 0 },
+                    { type: 'spike', x: 500, y: 0 },
+                    { type: 'block', x: 650, y: 0 },
+                    { type: 'block', x: 700, y: 40 },
+                    { type: 'spike', x: 850, y: 0 },
+                    { type: 'spike', x: 1050, y: 0 },
+                    { type: 'ship-portal', x: 1200, y: 100 },
+                    { type: 'block', x: 1400, y: 200 },
+                    { type: 'block', x: 1500, y: 50 },
+                    { type: 'block', x: 1700, y: 150 },
+                    { type: 'cube-portal', x: 1900, y: 100 },
+                    { type: 'block', x: 2050, y: 0 },
+                    { type: 'block', x: 2100, y: 0 },
+                    { type: 'spike', x: 2200, y: 0 },
+                    { type: 'finish', x: 2400, y: 0 }
+                ]
+            },
+            {
+                id: 2,
+                name: "Back On Track",
+                difficulty: "Easy",
+                color: "#155e75",
+                introText: "Back On Track introduces the Yellow Jump Pad for high-velocity automatic springs.",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'yellow-pad', x: 400, y: 0 },
+                    { type: 'block', x: 550, y: 120 },
+                    { type: 'spike', x: 750, y: 0 },
+                    { type: 'yellow-pad', x: 900, y: 0 },
+                    { type: 'block', x: 1050, y: 120 },
+                    { type: 'spike', x: 1100, y: 120 },
+                    { type: 'block', x: 1300, y: 0 },
+                    { type: 'ship-portal', x: 1450, y: 100 },
+                    { type: 'block', x: 1600, y: 220 },
+                    { type: 'block', x: 1800, y: 80 },
+                    { type: 'cube-portal', x: 2000, y: 100 },
+                    { type: 'yellow-pad', x: 2150, y: 0 },
+                    { type: 'block', x: 2280, y: 120 },
+                    { type: 'finish', x: 2500, y: 0 }
+                ]
+            },
+            {
+                id: 3,
+                name: "Polargeist",
+                difficulty: "Normal",
+                color: "#5b21b6",
+                introText: "Polargeist introduces Yellow Jump Orbs. Press JUMP while overlapping the orb in mid-air!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 450, y: 0 },
+                    { type: 'yellow-orb', x: 600, y: 110 },
+                    { type: 'block', x: 720, y: 100 },
+                    { type: 'yellow-orb', x: 900, y: 210 },
+                    { type: 'block', x: 1020, y: 200 },
+                    { type: 'spike', x: 1200, y: 0 },
+                    { type: 'yellow-pad', x: 1350, y: 0 },
+                    { type: 'block', x: 1500, y: 120 },
+                    { type: 'ship-portal', x: 1650, y: 100 },
+                    { type: 'block', x: 1800, y: 60 },
+                    { type: 'block', x: 1950, y: 240 },
+                    { type: 'cube-portal', x: 2100, y: 100 },
+                    { type: 'yellow-orb', x: 2250, y: 100 },
+                    { type: 'spike', x: 2350, y: 0 },
+                    { type: 'finish', x: 2600, y: 0 }
+                ]
+            },
+            {
+                id: 4,
+                name: "Dry Out",
+                difficulty: "Normal",
+                color: "#9a3412",
+                introText: "Dry Out introduces Gravity Portals. Moving through this turns gravity completely upside down!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 400, y: 0 },
+                    { type: 'yellow-pad', x: 550, y: 0 },
+                    { type: 'block', x: 700, y: 120 },
+                    { type: 'gravity-portal', x: 850, y: 100 },
+                    { type: 'block', x: 1050, y: 320 },
+                    { type: 'spike', x: 1200, y: 360 },
+                    { type: 'yellow-orb', x: 1350, y: 250 },
+                    { type: 'gravity-portal', x: 1550, y: 100 },
+                    { type: 'ship-portal', x: 1700, y: 100 },
+                    { type: 'block', x: 1900, y: 200 },
+                    { type: 'cube-portal', x: 2100, y: 100 },
+                    { type: 'spike', x: 2300, y: 0 },
+                    { type: 'finish', x: 2600, y: 0 }
+                ]
+            },
+            {
+                id: 5,
+                name: "Base after Base",
+                difficulty: "Hard",
+                color: "#065f46",
+                introText: "Base After Base introduces Black Spikes and Blocks that blend into the dark neon environment.",
+                elements: [
+                    { type: 'black-block', x: 250, y: 0 },
+                    { type: 'black-spike', x: 400, y: 0 },
+                    { type: 'black-block', x: 500, y: 0 },
+                    { type: 'yellow-pad', x: 650, y: 0 },
+                    { type: 'black-block', x: 780, y: 120 },
+                    { type: 'yellow-orb', x: 920, y: 220 },
+                    { type: 'black-block', x: 1050, y: 200 },
+                    { type: 'black-spike', x: 1200, y: 0 },
+                    { type: 'ship-portal', x: 1350, y: 100 },
+                    { type: 'black-block', x: 1500, y: 150 },
+                    { type: 'cube-portal', x: 1700, y: 100 },
+                    { type: 'black-spike', x: 1850, y: 0 },
+                    { type: 'black-spike', x: 1950, y: 0 },
+                    { type: 'yellow-pad', x: 2100, y: 0 },
+                    { type: 'black-block', x: 2250, y: 120 },
+                    { type: 'finish', x: 2500, y: 0 }
+                ]
+            },
+            {
+                id: 6,
+                name: "Can't Let Go",
+                difficulty: "Hard",
+                color: "#1e1b4b",
+                introText: "Can't Let Go introduces the Pink Jump Pad. It gives a moderate, highly controlled bounce.",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'pink-pad', x: 400, y: 0 },
+                    { type: 'block', x: 520, y: 60 },
+                    { type: 'spike', x: 680, y: 0 },
+                    { type: 'pink-pad', x: 800, y: 0 },
+                    { type: 'block', x: 920, y: 60 },
+                    { type: 'yellow-orb', x: 1080, y: 160 },
+                    { type: 'block', x: 1200, y: 150 },
+                    { type: 'ship-portal', x: 1350, y: 100 },
+                    { type: 'block', x: 1550, y: 50 },
+                    { type: 'cube-portal', x: 1750, y: 100 },
+                    { type: 'pink-pad', x: 1900, y: 0 },
+                    { type: 'block', x: 2020, y: 60 },
+                    { type: 'spike', x: 2150, y: 0 },
+                    { type: 'finish', x: 2400, y: 0 }
+                ]
+            },
+            {
+                id: 7,
+                name: "Jumper",
+                difficulty: "Harder",
+                color: "#831843",
+                introText: "Jumper is a massive test of reflexes, introducing Pink Orbs for quick, snappy double jumps.",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'pink-orb', x: 400, y: 100 },
+                    { type: 'block', x: 520, y: 80 },
+                    { type: 'pink-orb', x: 680, y: 180 },
+                    { type: 'block', x: 800, y: 160 },
+                    { type: 'yellow-pad', x: 950, y: 0 },
+                    { type: 'block', x: 1100, y: 120 },
+                    { type: 'ship-portal', x: 1250, y: 100 },
+                    { type: 'block', x: 1450, y: 220 },
+                    { type: 'cube-portal', x: 1650, y: 100 },
+                    { type: 'pink-orb', x: 1800, y: 100 },
+                    { type: 'pink-orb', x: 1950, y: 180 },
+                    { type: 'block', x: 2100, y: 160 },
+                    { type: 'spike', x: 2250, y: 0 },
+                    { type: 'finish', x: 2500, y: 0 }
+                ]
+            },
+            {
+                id: 8,
+                name: "Time Machine",
+                difficulty: "Harder",
+                color: "#7c2d12",
+                introText: "Time Machine introduces the Mirror Portal, which flips your entire screen perspective horizontally!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 400, y: 0 },
+                    { type: 'yellow-pad', x: 520, y: 0 },
+                    { type: 'block', x: 680, y: 120 },
+                    { type: 'mirror-portal', x: 820, y: 100 },
+                    { type: 'block', x: 1000, y: 120 },
+                    { type: 'spike', x: 1120, y: 120 },
+                    { type: 'pink-orb', x: 1280, y: 220 },
+                    { type: 'mirror-portal', x: 1450, y: 100 },
+                    { type: 'ship-portal', x: 1600, y: 100 },
+                    { type: 'block', x: 1800, y: 200 },
+                    { type: 'block', x: 1950, y: 80 },
+                    { type: 'gravity-portal', x: 2100, y: 100 },
+                    { type: 'block', x: 2250, y: 320 },
+                    { type: 'gravity-portal', x: 2400, y: 100 },
+                    { type: 'cube-portal', x: 2550, y: 100 },
+                    { type: 'spike', x: 2700, y: 0 },
+                    { type: 'finish', x: 2900, y: 0 }
+                ]
+            },
+            {
+                id: 9,
+                name: "Cycles",
+                difficulty: "Harder",
+                color: "#4a044e",
+                introText: "Cycles introduces the Ball Portal! Click to toggle gravity upside down instantly on surfaces.",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 400, y: 0 },
+                    { type: 'block', x: 550, y: 0 },
+                    { type: 'yellow-pad', x: 700, y: 0 },
+                    { type: 'block', x: 850, y: 120 },
+                    { type: 'ball-portal', x: 1000, y: 100 },
+                    { type: 'block', x: 1200, y: 0 },
+                    { type: 'block', x: 1350, y: 280 },
+                    { type: 'spike', x: 1500, y: 0 },
+                    { type: 'yellow-orb', x: 1650, y: 110 },
+                    { type: 'block', x: 1800, y: 100 },
+                    { type: 'cube-portal', x: 2000, y: 100 },
+                    { type: 'spike', x: 2200, y: 0 },
+                    { type: 'finish', x: 2450, y: 0 }
+                ]
+            },
+            {
+                id: 10,
+                name: "XStep",
+                difficulty: "Insane",
+                color: "#0f172a",
+                introText: "XStep introduces Blue Jump Pads and Blue Orbs, swapping your gravity upon activation!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 400, y: 0 },
+                    { type: 'blue-pad', x: 550, y: 0 },
+                    { type: 'block', x: 700, y: 120 },
+                    { type: 'blue-orb', x: 880, y: 220 },
+                    { type: 'block', x: 1050, y: 200 },
+                    { type: 'spike', x: 1200, y: 0 },
+                    { type: 'ship-portal', x: 1350, y: 100 },
+                    { type: 'block', x: 1500, y: 150 },
+                    { type: 'cube-portal', x: 1700, y: 100 },
+                    { type: 'blue-orb', x: 1900, y: 100 },
+                    { type: 'spike', x: 2050, y: 0 },
+                    { type: 'finish', x: 2300, y: 0 }
+                ]
+            },
+            {
+                id: 11,
+                name: "Clutterfunk",
+                difficulty: "Insane",
+                color: "#581c87",
+                introText: "Clutterfunk features lethal spinning Saw Blades and size portals that toggle Mini-Cube formats!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 420, y: 0 },
+                    { type: 'saw', x: 580, y: 20 },
+                    { type: 'block', x: 720, y: 0 },
+                    { type: 'mini-portal', x: 880, y: 100 },
+                    { type: 'block', x: 1050, y: 120 },
+                    { type: 'spike', x: 1200, y: 0 },
+                    { type: 'saw', x: 1350, y: 140 },
+                    { type: 'normal-portal', x: 1500, y: 100 },
+                    { type: 'ship-portal', x: 1680, y: 100 },
+                    { type: 'block', x: 1850, y: 150 },
+                    { type: 'cube-portal', x: 2050, y: 100 },
+                    { type: 'spike', x: 2200, y: 0 },
+                    { type: 'saw', x: 2350, y: 30 },
+                    { type: 'finish', x: 2550, y: 0 }
+                ]
+            },
+            {
+                id: 12,
+                name: "Theory of Everything",
+                difficulty: "Insane",
+                color: "#701a75",
+                introText: "Theory of Everything introduces the mid-air leaping UFO Portal mode!",
+                elements: [
+                    { type: 'block', x: 250, y: 0 },
+                    { type: 'spike', x: 420, y: 0 },
+                    { type: 'pink-pad', x: 550, y: 0 },
+                    { type: 'block', x: 680, y: 80 },
+                    { type: 'pink-orb', x: 850, y: 180 },
+                    { type: 'ufo-portal', x: 1000, y: 100 },
+                    { type: 'block', x: 1180, y: 60 },
+                    { type: 'block', x: 1350, y: 180 },
+                    { type: 'saw', x: 1500, y: 100 },
+                    { type: 'block', x: 1620, y: 250 },
+                    { type: 'cube-portal', x: 1800, y: 100 },
+                    { type: 'pink-orb', x: 1950, y: 100 },
+                    { type: 'spike', x: 2100, y: 0 },
+                    { type: 'finish', x: 2300, y: 0 }
+                ]
+            }
+        ];
+
+        const PRE_SEEDED_ONLINE_LEVELS = [
+            // Demons (The Nightmare, Bloodbath, DeCode, Nine Circles, Sonic Wave)
+            { id: "online-1", creator: "Jax", name: "The Nightmare", initialMode: "cube", elements: [
+                { type: 'block', x: 200, y: 0 }, { type: 'spike', x: 400, y: 0 }, { type: 'saw', x: 550, y: 20 }, { type: 'mini-portal', x: 700, y: 100 }, { type: 'spike', x: 850, y: 0 }, { type: 'normal-portal', x: 1000, y: 100 }, { type: 'finish', x: 1200, y: 0 }
+            ], difficulty: "Demon" },
+            { id: "online-2", creator: "Riot", name: "Bloodbath", initialMode: "ship", elements: [
+                { type: 'block', x: 180, y: 100 }, { type: 'spike', x: 350, y: 0 }, { type: 'saw', x: 500, y: 200 }, { type: 'saw', x: 650, y: 40 }, { type: 'mini-portal', x: 800, y: 100 }, { type: 'finish', x: 1100, y: 0 }
+            ], difficulty: "Demon" },
+            { id: "online-3", creator: "Rek361", name: "DeCode", initialMode: "cube", elements: [
+                { type: 'block', x: 200, y: 0 }, { type: 'gravity-portal', x: 380, y: 100 }, { type: 'blue-orb', x: 520, y: 250 }, { type: 'saw', x: 700, y: 340 }, { type: 'gravity-portal', x: 850, y: 100 }, { type: 'finish', x: 1100, y: 0 }
+            ], difficulty: "Demon" },
+            { id: "online-4", creator: "Zobros", name: "Nine Circles", initialMode: "ball", elements: [
+                { type: 'block', x: 220, y: 0 }, { type: 'saw', x: 400, y: 40 }, { type: 'blue-pad', x: 580, y: 0 }, { type: 'saw', x: 750, y: 180 }, { type: 'mini-portal', x: 900, y: 100 }, { type: 'finish', x: 1200, y: 0 }
+            ], difficulty: "Demon" },
+            { id: "online-5", creator: "Cyclic", name: "Sonic Wave", initialMode: "ship", elements: [
+                { type: 'block', x: 200, y: 120 }, { type: 'mini-portal', x: 400, y: 100 }, { type: 'saw', x: 580, y: 150 }, { type: 'saw', x: 720, y: 20 }, { type: 'normal-portal', x: 900, y: 100 }, { type: 'finish', x: 1200, y: 0 }
+            ], difficulty: "Demon" },
+
+            // Non-Demons
+            { id: "online-6", creator: "SpikeManiac", name: "Cyber Spike Rush", initialMode: "cube", elements: [
+                { type: 'block', x: 200, y: 0 }, { type: 'spike', x: 400, y: 0 }, { type: 'yellow-pad', x: 550, y: 0 }, { type: 'finish', x: 800, y: 0 }
+            ], difficulty: "Hard" },
+            { id: "online-7", creator: "NeoGamer", name: "Orbit Shifter", initialMode: "ship", elements: [
+                { type: 'block', x: 200, y: 80 }, { type: 'block', x: 400, y: 220 }, { type: 'finish', x: 750, y: 0 }
+            ], difficulty: "Harder" },
+            { id: "online-8", creator: "DashGod", name: "Portal Panic", initialMode: "cube", elements: [
+                { type: 'block', x: 200, y: 0 }, { type: 'gravity-portal', x: 380, y: 100 }, { type: 'finish', x: 700, y: 0 }
+            ], difficulty: "Insane" },
+            { id: "online-9", creator: "TheBuilder", name: "Orb Hopper", initialMode: "cube", elements: [
+                { type: 'block', x: 200, y: 0 }, { type: 'yellow-orb', x: 350, y: 110 }, { type: 'finish', x: 650, y: 0 }
+            ], difficulty: "Normal" },
+            { id: "online-10", creator: "WizGD", name: "Simple Starter", initialMode: "cube", elements: [
+                { type: 'block', x: 250, y: 0 }, { type: 'spike', x: 450, y: 0 }, { type: 'finish', x: 700, y: 0 }
+            ], difficulty: "Easy" }
+        ];
+
+        customLevels = [...PRE_SEEDED_ONLINE_LEVELS];
+
+        const EDITOR_PALETTE_ITEMS = [
+            { type: 'block', label: 'Yellow Block', icon: 'fa-square', color: 'text-yellow-400' },
+            { type: 'black-block', label: 'Black Block', icon: 'fa-square', color: 'text-slate-800 border border-slate-600' },
+            { type: 'spike', label: 'Yellow Spike', icon: 'fa-triangle-exclamation', color: 'text-yellow-500' },
+            { type: 'black-spike', label: 'Black Spike', icon: 'fa-triangle-exclamation', color: 'text-slate-800' },
+            { type: 'saw', label: 'Saw Blade', icon: 'fa-gear', color: 'text-red-500' },
+            { type: 'yellow-pad', label: 'Yellow Pad', icon: 'fa-circle-chevron-up', color: 'text-yellow-400' },
+            { type: 'pink-pad', label: 'Pink Pad', icon: 'fa-circle-chevron-up', color: 'text-pink-400' },
+            { type: 'blue-pad', label: 'Blue Pad', icon: 'fa-circle-chevron-up', color: 'text-blue-400' },
+            { type: 'yellow-orb', label: 'Yellow Orb', icon: 'fa-circle', color: 'text-yellow-400 font-bold' },
+            { type: 'pink-orb', label: 'Pink Orb', icon: 'fa-circle', color: 'text-pink-400 font-bold' },
+            { type: 'blue-orb', label: 'Blue Orb', icon: 'fa-circle', color: 'text-blue-400 font-bold' },
+            { type: 'ship-portal', label: 'Ship Portal', icon: 'fa-ellipsis-vertical', color: 'text-fuchsia-400' },
+            { type: 'cube-portal', label: 'Cube Portal', icon: 'fa-ellipsis-vertical', color: 'text-emerald-400' },
+            { type: 'ball-portal', label: 'Ball Portal', icon: 'fa-ellipsis-vertical', color: 'text-violet-500' },
+            { type: 'ufo-portal', label: 'UFO Portal', icon: 'fa-ellipsis-vertical', color: 'text-fuchsia-500' },
+            { type: 'gravity-portal', label: 'Gravity Portal', icon: 'fa-arrows-up-down', color: 'text-indigo-400' },
+            { type: 'mini-portal', label: 'Mini Portal', icon: 'fa-minimize', color: 'text-pink-500' },
+            { type: 'normal-portal', label: 'Normal Portal', icon: 'fa-maximize', color: 'text-cyan-400' },
+            { type: 'mirror-portal', label: 'Mirror Portal', icon: 'fa-left-right', color: 'text-amber-500' },
+            { type: 'finish', label: 'Finish Line', icon: 'fa-flag-checkered', color: 'text-white' }
+        ];
+
+        let selectedEditorItem = 'block';
+
+        let canvas, ctx;
+        let animationFrameId = null;
+        let isPlaying = false;
+        let isLevelCreatorMode = false;
+
+        let player = {
+            x: 100,
+            y: 0,
+            vx: 5.5,
+            vy: 0,
+            size: 32,
+            scale: 1.0,
+            rotation: 0,
+            isGrounded: false,
+            isDead: false,
+            mode: 'cube',
+            gravityDir: 1,
+            attempts: 1,
+            isMirrored: false
+        };
+
+        let currentActiveLevel = null;
+        let activeLevelElements = [];
+        let particles = [];
+        let practiceModeActive = false;
+        let checkpoints = [];
+
+        let keys = {};
+        let globalSawAngle = 0;
+
+        window.addEventListener('load', () => {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            setupControls();
+
+            renderLevelCards();
+            renderCustomizePalette();
+            renderCustomizeColors();
+            renderOnlineLevelsList();
+            renderEditorPalette();
+
+            drawCustomizePreview();
+        });
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        function setupControls() {
+            window.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Space' || e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    handleJumpPress();
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+
+            canvas.addEventListener('mousedown', (e) => {
+                keys['TouchMouse'] = true;
+                handleJumpPress();
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                keys['TouchMouse'] = false;
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys['TouchMouse'] = true;
+                handleJumpPress();
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                keys['TouchMouse'] = false;
+            });
+        }
+
+        function handleJumpPress() {
+            if (!isPlaying || player.isDead) return;
+
+            // Orb trigger evaluation
+            let triggeredOrb = false;
+            activeLevelElements.forEach(el => {
+                if (el.type === 'yellow-orb' || el.type === 'pink-orb' || el.type === 'blue-orb') {
+                    let distance = Math.hypot((player.x + player.size/2) - el.x, (player.y + player.size/2) - el.y);
+                    if (distance < 70) {
+                        triggeredOrb = true;
+                        if (el.type === 'yellow-orb') {
+                            player.vy = -9.5 * player.gravityDir;
+                        } else if (el.type === 'pink-orb') {
+                            player.vy = -6.8 * player.gravityDir;
+                        } else if (el.type === 'blue-orb') {
+                            player.gravityDir *= -1;
+                            player.vy = -4.5 * player.gravityDir;
+                        }
+                        player.isGrounded = false;
+                        playSynthSound('orb');
+                        createOrbBurst(el.x, el.y, el.type === 'blue-orb' ? '#3b82f6' : (el.type === 'yellow-orb' ? '#facc15' : '#f472b6'));
+                    }
+                }
+            });
+
+            if (triggeredOrb) return;
+
+            if (player.mode === 'cube') {
+                if (player.isGrounded) {
+                    player.vy = -8.5 * player.gravityDir;
+                    player.isGrounded = false;
+                    playSynthSound('jump');
+                }
+            } else if (player.mode === 'ball') {
+                if (player.isGrounded) {
+                    player.gravityDir *= -1;
+                    player.vy = -3.5 * player.gravityDir; // micro-hop supporting flip transit
+                    player.isGrounded = false;
+                    playSynthSound('jump');
+                }
+            } else if (player.mode === 'ufo') {
+                // UFO flaps upward relative to gravity vector
+                player.vy = -6.5 * player.gravityDir;
+                player.isGrounded = false;
+                playSynthSound('jump');
+                createOrbBurst(player.x, player.y, '#e879f9');
+            }
+        }
+
+        function drawDifficultyFace(c, difficulty, x, y, size) {
+            c.save();
+            c.translate(x, y);
+
+            c.strokeStyle = '#000000';
+            c.lineWidth = size * 0.08;
+
+            if (difficulty === 'N/R') {
+                c.fillStyle = '#64748b'; // Slate Grey
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Face Details
+                c.fillStyle = '#000000';
+                c.beginPath(); c.arc(-size/5, -size/10, size*0.08, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(size/5, -size/10, size*0.08, 0, Math.PI*2); c.fill();
+            }
+            else if (difficulty === 'Easy') {
+                c.fillStyle = '#3b82f6'; // Bright Blue Easy Face
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Eyes
+                c.fillStyle = '#000000';
+                c.beginPath(); c.arc(-size/5, -size/6, size*0.12, 0, Math.PI, true); c.fill();
+                c.beginPath(); c.arc(size/5, -size/6, size*0.12, 0, Math.PI, true); c.fill();
+                // Wide smile
+                c.fillStyle = '#ffffff';
+                c.beginPath(); c.arc(0, size/10, size/4, 0, Math.PI, false); c.fill(); c.stroke();
+            }
+            else if (difficulty === 'Normal') {
+                c.fillStyle = '#22c55e'; // Vibrant Green
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Face details
+                c.fillStyle = '#000000';
+                c.beginPath(); c.arc(-size/5, -size/8, size*0.1, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(size/5, -size/8, size*0.1, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(0, size/8, size*0.15, 0, Math.PI, false); c.stroke();
+            }
+            else if (difficulty === 'Hard') {
+                c.fillStyle = '#eab308'; // Yellow
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Eyes (squinted)
+                c.fillStyle = '#000000';
+                c.fillRect(-size/3, -size/5, size/4, size*0.08);
+                c.fillRect(size/12, -size/5, size/4, size*0.08);
+                // Neutral mouth
+                c.beginPath(); c.moveTo(-size/4, size/8); c.lineTo(size/4, size/8); c.stroke();
+            }
+            else if (difficulty === 'Harder') {
+                c.fillStyle = '#f97316'; // Orange-Red
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Eyes & Slanted Brows
+                c.fillStyle = '#000000';
+                c.beginPath();
+                c.moveTo(-size/3, -size/4); c.lineTo(-size/12, -size/6); c.lineTo(-size/3, -size/8);
+                c.closePath(); c.fill();
+                c.beginPath();
+                c.moveTo(size/3, -size/4); c.lineTo(size/12, -size/6); c.lineTo(size/3, -size/8);
+                c.closePath(); c.fill();
+                // Frown
+                c.beginPath(); c.arc(0, size/4, size/5, Math.PI, 0, false); c.stroke();
+            }
+            else if (difficulty === 'Insane') {
+                c.fillStyle = '#d946ef'; // Magenta
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+                // Aggressive eyes
+                c.fillStyle = '#000000';
+                c.beginPath();
+                c.moveTo(-size/3, -size/4); c.lineTo(-size/12, -size/12); c.lineTo(-size/4, -size/6);
+                c.closePath(); c.fill();
+                c.beginPath();
+                c.moveTo(size/3, -size/4); c.lineTo(size/12, -size/12); c.lineTo(size/4, -size/6);
+                c.closePath(); c.fill();
+                // Screaming mouth
+                c.beginPath(); c.ellipse(0, size/6, size/5, size/10, 0, 0, Math.PI*2); c.fill();
+            }
+            else if (difficulty === 'Demon') {
+                // Demon Face (inspired by image_bf7f5e.png)
+                c.fillStyle = '#ef4444'; // Red Base
+                c.beginPath(); c.arc(0, 0, size/2, 0, Math.PI*2); c.fill(); c.stroke();
+
+                // Pointy horns
+                c.fillStyle = '#ffffff';
+                c.beginPath();
+                c.moveTo(-size/3, -size/3); c.lineTo(-size/2, -size/1.5); c.lineTo(-size/8, -size/2.5);
+                c.closePath(); c.fill(); c.stroke();
+                c.beginPath();
+                c.moveTo(size/3, -size/3); c.lineTo(size/2, -size/1.5); c.lineTo(size/8, -size/2.5);
+                c.closePath(); c.fill(); c.stroke();
+
+                // Angry neon green eyes
+                c.fillStyle = '#22c55e';
+                c.beginPath();
+                c.moveTo(-size/3, -size/6); c.lineTo(-size/15, -size/8); c.lineTo(-size/4, size/30);
+                c.closePath(); c.fill(); c.stroke();
+                c.beginPath();
+                c.moveTo(size/3, -size/6); c.lineTo(size/15, -size/8); c.lineTo(size/4, size/30);
+                c.closePath(); c.fill(); c.stroke();
+
+                // Blocky Teeth Grille
+                c.fillStyle = '#ffffff';
+                c.fillRect(-size/3, size/10, size*0.66, size*0.25);
+                c.strokeRect(-size/3, size/10, size*0.66, size*0.25);
+                c.beginPath();
+                c.moveTo(-size/3, size/10 + size*0.125); c.lineTo(size/3, size/10 + size*0.125);
+                c.moveTo(-size/10, size/10); c.lineTo(-size/10, size/10 + size*0.25);
+                c.moveTo(size/10, size/10); c.lineTo(size/10, size/10 + size*0.25);
+                c.stroke();
+            }
+
+            c.restore();
+        }
+
+        function drawShip(c, shipId, size, primColor, secColor) {
+            c.save();
+            c.fillStyle = secColor;
+            c.strokeStyle = primColor;
+            c.lineWidth = size * 0.08;
+
+            if (shipId === 1) {
+                // Default Ship: Classic Triangle Delta Wing
+                c.beginPath();
+                c.moveTo(-size/2, size/4);
+                c.lineTo(size/2, size/4);
+                c.lineTo(size*0.6, -size/8);
+                c.lineTo(0, -size*0.4);
+                c.lineTo(-size*0.5, -size/8);
+                c.closePath();
+                c.fill();
+                c.stroke();
+            } else if (shipId === 2) {
+                // Clutterfunk! (Angled futuristic stealth)
+                c.beginPath();
+                c.moveTo(-size/2, size/4);
+                c.lineTo(size/3, size/4);
+                c.lineTo(size/2, 0);
+                c.lineTo(size/4, -size/3);
+                c.lineTo(-size/4, -size/3);
+                c.lineTo(-size/2, -size/8);
+                c.closePath();
+                c.fill();
+                c.stroke();
+            } else if (shipId === 3) {
+                // Clutterphonk (cyber blocky double wing)
+                c.fillRect(-size/2, -size/4, size, size/2);
+                c.strokeRect(-size/2, -size/4, size, size/2);
+                c.fillRect(-size/3, -size/2, size*0.66, size/4);
+                c.strokeRect(-size/3, -size/2, size*0.66, size/4);
+            } else if (shipId === 4) {
+                // Theory of Everything! (Bird wing style)
+                c.beginPath();
+                c.arc(0, 0, size/3, 0, Math.PI*2);
+                c.fill();
+                c.stroke();
+                // wing
+                c.beginPath();
+                c.moveTo(-size/3, 0);
+                c.lineTo(-size*0.6, -size/4);
+                c.lineTo(-size/2, size/6);
+                c.closePath();
+                c.fill();
+                c.stroke();
+            }
+            c.restore();
+        }
+
+        function drawAllActivePreviews() {
+            // Draw previews on select level cards
+            OFFICIAL_LEVELS.forEach(lvl => {
+                const iconCanvas = document.getElementById(`lvl-icon-canvas-${lvl.id}`);
+                if (iconCanvas) {
+                    const c = iconCanvas.getContext('2d');
+                    c.clearRect(0, 0, 36, 36);
+                    const mode = lvl.initialMode || 'cube';
+                    if (mode === 'ship') {
+                        c.save(); c.translate(18, 18); drawShip(c, USER_PROGRESS.selectedShip, 24, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor); c.restore();
+                    } else if (mode === 'ufo') {
+                        c.save(); c.translate(18, 18);
+                        c.fillStyle = USER_PROGRESS.secondaryColor; c.strokeStyle = USER_PROGRESS.primaryColor; c.lineWidth = 1.5;
+                        c.beginPath(); c.ellipse(0, 2, 12, 4, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+                        c.fillStyle = "rgba(0, 255, 255, 0.4)"; c.beginPath(); c.arc(0, -2, 6, Math.PI, 0, false); c.closePath(); c.fill(); c.stroke();
+                        c.restore();
+                    } else {
+                        drawPlayerFace(c, 18, 18, 24, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                    }
+                }
+            });
+
+            // Draw previews on custom list
+            customLevels.forEach(lvl => {
+                const iconCanvas = document.getElementById(`lvl-icon-canvas-${lvl.id}`);
+                if (iconCanvas) {
+                    const c = iconCanvas.getContext('2d');
+                    c.clearRect(0, 0, 36, 36);
+                    const mode = lvl.initialMode || 'cube';
+                    if (mode === 'ship') {
+                        c.save(); c.translate(18, 18); drawShip(c, USER_PROGRESS.selectedShip, 24, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor); c.restore();
+                    } else {
+                        drawPlayerFace(c, 18, 18, 24, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                    }
+                }
+            });
+        }
+
+        function showModal(title, desc, iconClass = 'fa-circle-check', btnText = 'Awesome', colorClass = 'text-cyan-400') {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-btn').innerText = btnText;
+            
+            const icon = document.getElementById('modal-icon');
+            icon.className = `fa-solid ${iconClass}`;
+            
+            const container = document.getElementById('modal-icon-container');
+            container.className = `mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 border border-slate-700 ${colorClass} text-3xl mb-4`;
+
+            document.getElementById('custom-modal').classList.remove('hidden');
+            document.getElementById('custom-modal').classList.add('flex');
+            
+            setTimeout(() => {
+                document.getElementById('modal-box').classList.remove('scale-95');
+                document.getElementById('modal-box').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            document.getElementById('modal-box').classList.remove('scale-100');
+            document.getElementById('modal-box').classList.add('scale-95');
+            setTimeout(() => {
+                document.getElementById('custom-modal').classList.add('hidden');
+                document.getElementById('custom-modal').classList.remove('flex');
+            }, 150);
+        }
+
+        function openNewsModal() {
+            document.getElementById('news-modal').classList.remove('hidden');
+            document.getElementById('news-modal').classList.add('flex');
+        }
+
+        function closeNewsModal() {
+            document.getElementById('news-modal').classList.add('hidden');
+            document.getElementById('news-modal').classList.remove('flex');
+        }
+
+        function switchScreen(screenId) {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('level-select-screen').classList.add('hidden');
+            document.getElementById('customize-screen').classList.add('hidden');
+            document.getElementById('editor-menu-screen').classList.add('hidden');
+            document.getElementById('level-editor-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.add('hidden');
+
+            if (screenId === 'menu') {
+                document.getElementById('menu-screen').classList.remove('hidden');
+            } else if (screenId === 'level-select') {
+                document.getElementById('level-select-screen').classList.remove('hidden');
+                renderLevelCards();
+            } else if (screenId === 'customize') {
+                document.getElementById('customize-screen').classList.remove('hidden');
+                drawCustomizePreview();
+            } else if (screenId === 'editor-menu') {
+                document.getElementById('editor-menu-screen').classList.remove('hidden');
+                renderOnlineLevelsList();
+            } else if (screenId === 'editor-workspace') {
+                document.getElementById('level-editor-screen').classList.remove('hidden');
+            } else if (screenId === 'gameplay') {
+                document.getElementById('gameplay-screen').classList.remove('hidden');
+            }
+        }
+
+        function renderLevelCards() {
+            const container = document.getElementById('level-cards-container');
+            container.innerHTML = '';
+
+            OFFICIAL_LEVELS.forEach((lvl) => {
+                const record = USER_PROGRESS.levelsCompleted[lvl.id] || { normal: false, practice: false };
+                const normalPct = record.normal ? "100%" : "0%";
+                const practicePct = record.practice ? "100%" : "0%";
+
+                const faceCardId = `lvl-face-canvas-${lvl.id}`;
+                const iconCardId = `lvl-icon-canvas-${lvl.id}`;
+
+                const cardHtml = `
+                    <div class="flex-shrink-0 w-64 bg-slate-800 border-2 border-slate-700 hover:border-cyan-500 rounded-xl p-4 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-slate-400">Level ${lvl.id}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <!-- Live Player Icon preview -->
+                                    <canvas id="${iconCardId}" width="36" height="36" class="w-9 h-9 border border-slate-700 bg-slate-900 rounded-lg"></canvas>
+                                    <!-- Difficulty face preview -->
+                                    <canvas id="${faceCardId}" width="24" height="24" class="w-6 h-6"></canvas>
+                                    <span class="px-1.5 py-0.5 text-[9px] font-extrabold rounded bg-slate-900 border border-slate-700 text-yellow-400">${lvl.difficulty}</span>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-bold text-white tracking-wide">${lvl.name}</h3>
+                            <p class="text-[10px] text-slate-400 mt-2 leading-relaxed h-12 overflow-hidden">${lvl.introText}</p>
+                        </div>
+
+                        <div class="mt-4 pt-2 border-t border-slate-700/60">
+                            <div class="space-y-1.5 mb-4 text-[10px]">
+                                <div>
+                                    <div class="flex justify-between text-slate-300 font-semibold">
+                                        <span>Normal Mode:</span>
+                                        <span class="${record.normal ? 'text-green-400 font-extrabold' : 'text-slate-400'}">${normalPct}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-1">
+                                        <div class="h-full bg-green-500" style="width: ${normalPct}"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-slate-300 font-semibold">
+                                        <span>Practice Mode:</span>
+                                        <span class="${record.practice ? 'text-cyan-400 font-extrabold' : 'text-slate-400'}">${practicePct}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-1">
+                                        <div class="h-full bg-cyan-400" style="width: ${practicePct}"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="launchLevel(${lvl.id}, false)" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-500 hover:to-blue-400 text-white font-bold text-xs rounded-lg transition-all transform active:scale-95 shadow-md">
+                                <i class="fa-solid fa-play mr-1"></i> Start Level
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+
+                setTimeout(() => {
+                    const canvasEl = document.getElementById(faceCardId);
+                    if (canvasEl) {
+                        const cardCtx = canvasEl.getContext('2d');
+                        drawDifficultyFace(cardCtx, lvl.difficulty, 12, 12, 18);
+                    }
+                }, 5);
+            });
+
+            setTimeout(drawAllActivePreviews, 10);
+        }
+
+        function scrollLevels(dir) {
+            const container = document.getElementById('level-cards-container');
+            container.scrollBy({ left: dir * 280, behavior: 'smooth' });
+        }
+
+        let currentCustomizeTab = 'cube';
+
+        function setCustomizeTab(tab) {
+            currentCustomizeTab = tab;
+            document.getElementById('tab-cube').className = tab === 'cube' ? 'flex-1 py-1.5 font-bold rounded-lg bg-yellow-500 text-slate-950 shadow-md text-xs' : 'flex-1 py-1.5 font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition text-xs';
+            document.getElementById('tab-ship').className = tab === 'ship' ? 'flex-1 py-1.5 font-bold rounded-lg bg-yellow-500 text-slate-950 shadow-md text-xs' : 'flex-1 py-1.5 font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition text-xs';
+            document.getElementById('tab-colors').className = tab === 'colors' ? 'flex-1 py-1.5 font-bold rounded-lg bg-yellow-500 text-slate-950 shadow-md text-xs' : 'flex-1 py-1.5 font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition text-xs';
+
+            if (tab === 'cube' || tab === 'ship') {
+                document.getElementById('icons-grid-container').classList.remove('hidden');
+                document.getElementById('icons-grid-container').classList.add('grid');
+                document.getElementById('colors-selection-container').classList.add('hidden');
+                renderCustomizePalette();
+            } else {
+                document.getElementById('icons-grid-container').classList.add('hidden');
+                document.getElementById('icons-grid-container').classList.remove('grid');
+                document.getElementById('colors-selection-container').classList.remove('hidden');
+            }
+        }
+
+        function isCubeUnlocked(cube) {
+            if (cube.type === 'default') return true;
+            if (cube.type === 'unlock-normal') {
+                const record = USER_PROGRESS.levelsCompleted[cube.levelId];
+                return record && record.normal;
+            }
+            if (cube.type === 'unlock-practice') {
+                const record = USER_PROGRESS.levelsCompleted[cube.levelId];
+                return record && record.practice;
+            }
+            if (cube.type === 'unlock-online-normal') {
+                return USER_PROGRESS.customCompletedNormal >= cube.count;
+            }
+            if (cube.type === 'unlock-online-practice') {
+                return USER_PROGRESS.customCompletedPractice >= cube.count;
+            }
+            if (cube.type === 'unlock-play-normal' || cube.type === 'unlock-play-practice') {
+                const record = USER_PROGRESS.levelsCompleted[cube.levelId] || USER_PROGRESS.playedLevels[cube.levelId];
+                return !!record;
+            }
+            return false;
+        }
+
+        function isShipUnlocked(ship) {
+            if (ship.type === 'default') return true;
+            if (ship.type === 'unlock-normal') {
+                const record = USER_PROGRESS.levelsCompleted[ship.levelId];
+                return record && record.normal;
+            }
+            if (ship.type === 'unlock-practice') {
+                const record = USER_PROGRESS.levelsCompleted[ship.levelId];
+                return record && record.practice;
+            }
+            return false;
+        }
+
+        function renderCustomizePalette() {
+            const container = document.getElementById('icons-grid-container');
+            container.innerHTML = '';
+
+            if (currentCustomizeTab === 'cube') {
+                CUBES_DATA.forEach(cube => {
+                    const unlocked = isCubeUnlocked(cube);
+                    const isSelected = USER_PROGRESS.selectedCube === cube.id;
+
+                    let cardClass = "relative bg-slate-900 border-2 rounded-xl p-2 cursor-pointer flex items-center justify-center aspect-square transition transform hover:scale-105 active:scale-95";
+                    if (isSelected) {
+                        cardClass += " border-yellow-400 ring-2 ring-yellow-400 shadow-lg";
+                    } else {
+                        cardClass += " border-slate-700 hover:border-slate-500";
+                    }
+
+                    let opacityClass = unlocked ? "opacity-100" : "opacity-40";
+                    const elementId = `grid-cube-canvas-${cube.id}`;
+
+                    const html = `
+                        <div onclick="selectCube(${cube.id})" ondblclick="launchIconDetailCard(${cube.id}, 'cube')" class="${cardClass}">
+                            <div class="w-full h-full flex flex-col items-center justify-center ${opacityClass}">
+                                <canvas id="${elementId}" width="40" height="40" class="w-10 h-10"></canvas>
+                            </div>
+                            ${!unlocked ? `
+                                <div class="absolute inset-0 bg-slate-950/70 rounded-xl flex items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-lock text-xs"></i>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+
+                    setTimeout(() => {
+                        const cellCanvas = document.getElementById(elementId);
+                        if (cellCanvas) {
+                            const cellCtx = cellCanvas.getContext('2d');
+                            drawPlayerFace(cellCtx, 20, 20, 32, cube.id, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                        }
+                    }, 5);
+                });
+            } else if (currentCustomizeTab === 'ship') {
+                SHIPS_DATA.forEach(ship => {
+                    const unlocked = isShipUnlocked(ship);
+                    const isSelected = USER_PROGRESS.selectedShip === ship.id;
+
+                    let cardClass = "relative bg-slate-900 border-2 rounded-xl p-2 cursor-pointer flex items-center justify-center aspect-square transition transform hover:scale-105 active:scale-95";
+                    if (isSelected) {
+                        cardClass += " border-yellow-400 ring-2 ring-yellow-400 shadow-lg";
+                    } else {
+                        cardClass += " border-slate-700 hover:border-slate-500";
+                    }
+
+                    let opacityClass = unlocked ? "opacity-100" : "opacity-40";
+                    const elementId = `grid-ship-canvas-${ship.id}`;
+
+                    const html = `
+                        <div onclick="selectShip(${ship.id})" ondblclick="launchIconDetailCard(${ship.id}, 'ship')" class="${cardClass}">
+                            <div class="w-full h-full flex flex-col items-center justify-center ${opacityClass}">
+                                <canvas id="${elementId}" width="40" height="40" class="w-10 h-10"></canvas>
+                            </div>
+                            ${!unlocked ? `
+                                <div class="absolute inset-0 bg-slate-950/70 rounded-xl flex items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-lock text-xs"></i>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+
+                    setTimeout(() => {
+                        const cellCanvas = document.getElementById(elementId);
+                        if (cellCanvas) {
+                            const cellCtx = cellCanvas.getContext('2d');
+                            cellCtx.translate(20, 20);
+                            drawShip(cellCtx, ship.id, 32, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                        }
+                    }, 5);
+                });
+            }
+        }
+
+        function launchIconDetailCard(id, type) {
+            if (type === 'cube') {
+                const cube = CUBES_DATA.find(c => c.id === id);
+                if (!cube) return;
+
+                const isLocked = !isCubeUnlocked(cube);
+                const statusText = isLocked ? "LOCKED 🔒" : "UNLOCKED 🔓";
+                const reqText = isLocked ? `Unlock Condition: ${cube.desc}` : "Ready to jump and flip!";
+
+                showModal(
+                    `Cube ${cube.id} - ${cube.name}`,
+                    `Status: ${statusText}\n${reqText}`,
+                    "fa-cube",
+                    "Equip Cube",
+                    "text-yellow-400"
+                );
+            } else if (type === 'ship') {
+                const ship = SHIPS_DATA.find(s => s.id === id);
+                if (!ship) return;
+
+                const isLocked = !isShipUnlocked(ship);
+                const statusText = isLocked ? "LOCKED 🔒" : "UNLOCKED 🔓";
+                const reqText = isLocked ? `Unlock Condition: ${ship.desc}` : "Ready to glide and soar!";
+
+                showModal(
+                    `Ship ${ship.id} - ${ship.name}`,
+                    `Status: ${statusText}\n${reqText}`,
+                    "fa-plane",
+                    "Equip Ship",
+                    "text-pink-400"
+                );
+            }
+        }
+
+        function selectCube(id) {
+            const cube = CUBES_DATA.find(c => c.id === id);
+            const unlocked = isCubeUnlocked(cube);
+
+            if (!unlocked) {
+                document.getElementById('selected-name').innerText = "Locked: " + cube.name;
+                document.getElementById('selected-desc').innerText = `To Unlock: ${cube.desc}`;
+                return;
+            }
+
+            USER_PROGRESS.selectedCube = id;
+            document.getElementById('selected-name').innerText = cube.name;
+            document.getElementById('selected-desc').innerText = cube.desc;
+
+            renderCustomizePalette();
+            drawCustomizePreview();
+            drawAllActivePreviews();
+        }
+
+        function selectShip(id) {
+            const ship = SHIPS_DATA.find(s => s.id === id);
+            const unlocked = isShipUnlocked(ship);
+
+            if (!unlocked) {
+                document.getElementById('selected-name').innerText = "Locked: " + ship.name;
+                document.getElementById('selected-desc').innerText = `To Unlock: ${ship.desc}`;
+                return;
+            }
+
+            USER_PROGRESS.selectedShip = id;
+            document.getElementById('selected-name').innerText = ship.name;
+            document.getElementById('selected-desc').innerText = ship.desc;
+
+            renderCustomizePalette();
+            drawCustomizePreview();
+            drawAllActivePreviews();
+        }
+
+        function renderCustomizeColors() {
+            const pBox = document.getElementById('primary-colors-box');
+            const sBox = document.getElementById('secondary-colors-box');
+            pBox.innerHTML = '';
+            sBox.innerHTML = '';
+
+            COLOR_SWATCHES.forEach(color => {
+                const pActive = USER_PROGRESS.primaryColor === color;
+                const pBtn = document.createElement('button');
+                pBtn.className = `w-8 h-8 rounded-full border-2 ${pActive ? 'border-white ring-2 ring-cyan-400 scale-110 shadow' : 'border-transparent'} hover:scale-105 transition`;
+                pBtn.style.backgroundColor = color;
+                pBtn.onclick = () => {
+                    USER_PROGRESS.primaryColor = color;
+                    renderCustomizeColors();
+                    renderCustomizePalette();
+                    drawCustomizePreview();
+                    drawAllActivePreviews();
+                };
+                pBox.appendChild(pBtn);
+
+                const sActive = USER_PROGRESS.secondaryColor === color;
+                const sBtn = document.createElement('button');
+                sBtn.className = `w-8 h-8 rounded-full border-2 ${sActive ? 'border-white ring-2 ring-pink-400 scale-110 shadow' : 'border-transparent'} hover:scale-105 transition`;
+                sBtn.style.backgroundColor = color;
+                sBtn.onclick = () => {
+                    USER_PROGRESS.secondaryColor = color;
+                    renderCustomizeColors();
+                    renderCustomizePalette();
+                    drawCustomizePreview();
+                    drawAllActivePreviews();
+                };
+                sBox.appendChild(sBtn);
+            });
+        }
+
+        function drawCustomizePreview() {
+            const pCanvas = document.getElementById('preview-canvas');
+            if (!pCanvas) return;
+            const pCtx = pCanvas.getContext('2d');
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+            if (currentCustomizeTab === 'ship') {
+                pCtx.save();
+                pCtx.translate(60, 60);
+                drawShip(pCtx, USER_PROGRESS.selectedShip, 80, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                pCtx.restore();
+            } else {
+                drawPlayerFace(pCtx, 60, 60, 80, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+            }
+        }
+
+        function drawPlayerFace(c, x, y, size, cubeId, primColor, secColor) {
+            c.save();
+            c.translate(x, y);
+
+            c.shadowBlur = 10;
+            c.shadowColor = primColor;
+
+            c.fillStyle = primColor;
+            c.fillRect(-size/2, -size/2, size, size);
+            c.shadowBlur = 0;
+
+            c.strokeStyle = secColor;
+            c.lineWidth = size * 0.08;
+            c.strokeRect(-size/2 + c.lineWidth/2, -size/2 + c.lineWidth/2, size - c.lineWidth, size - c.lineWidth);
+
+            c.fillStyle = secColor;
+
+            if (cubeId === 1) {
+                c.strokeRect(-size/4, -size/4, size/2, size/2);
+            } else if (cubeId === 2) {
+                c.beginPath();
+                c.arc(-size/5, -size/6, size*0.12, 0, Math.PI * 2);
+                c.arc(size/5, -size/6, size*0.12, 0, Math.PI * 2);
+                c.fill();
+                c.beginPath();
+                c.arc(0, size/8, size*0.22, 0, Math.PI, false);
+                c.lineWidth = size * 0.06;
+                c.stroke();
+            } else if (cubeId === 3) {
+                c.beginPath();
+                c.moveTo(-size/3, -size/3); c.lineTo(size/3, size/3);
+                c.moveTo(size/3, -size/3); c.lineTo(-size/3, size/3);
+                c.lineWidth = size * 0.08;
+                c.stroke();
+                c.beginPath();
+                c.arc(0, -size/4, size*0.07, 0, Math.PI*2);
+                c.arc(0, size/4, size*0.07, 0, Math.PI*2);
+                c.fill();
+            } else if (cubeId === 4) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.strokeRect(-size/6, -size/6, size/3, size/3);
+            } else if (cubeId === 5) {
+                c.beginPath();
+                c.moveTo(-size/3, -size/4); c.lineTo(-size/12, -size/8);
+                c.moveTo(size/3, -size/4); c.lineTo(size/12, -size/8);
+                c.lineWidth = size * 0.08;
+                c.stroke();
+                c.fillRect(-size/3, -size/12, size/6, size/6);
+                c.fillRect(size/6, -size/12, size/6, size/6);
+                c.fillRect(-size/4, size/8, size/2, size/5);
+            } else if (cubeId === 6) {
+                c.fillRect(-size/3, -size/4, size*0.66, size/4);
+                c.beginPath();
+                c.arc(-size/6, 0, size/6, 0, Math.PI, false);
+                c.arc(size/6, 0, size/6, 0, Math.PI, false);
+                c.fill();
+            } else if (cubeId === 7) {
+                c.beginPath();
+                c.arc(-size/4, -size/8, size*0.1, 0, Math.PI*2);
+                c.arc(0, -size/4, size*0.11, 0, Math.PI*2);
+                c.arc(size/4, -size/8, size*0.1, 0, Math.PI*2);
+                c.fill();
+                c.fillRect(-size/4, size/6, size/2, size*0.08);
+            } else if (cubeId === 8) {
+                c.fillRect(-size/3, -size/4, size/5, size/5);
+                c.fillRect(size/3 - size/5, -size/4, size/5, size/5);
+                c.fillRect(-size/8, -size/20, size/4, size/4);
+                c.fillRect(-size/4, size/8, size/8, size/6);
+                c.fillRect(size/4 - size/8, size/8, size/8, size/6);
+            } else if (cubeId === 9) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.fillRect(-size/12, -size/12, size/6, size/6);
+            } else if (cubeId === 10) {
+                c.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    let angle = (i * 4 * Math.PI) / 5 - Math.PI/2;
+                    let rx = Math.cos(angle) * (size*0.3);
+                    let ry = Math.sin(angle) * (size*0.3);
+                    if (i === 0) c.moveTo(rx, ry);
+                    else c.lineTo(rx, ry);
+                }
+                c.closePath();
+                c.lineWidth = size * 0.06;
+                c.stroke();
+            } else if (cubeId === 11) {
+                c.beginPath();
+                c.moveTo(-size/3, size/3);
+                c.lineTo(-size/3, -size/6);
+                c.lineTo(-size/6, -size/3);
+                c.lineTo(0, -size/12);
+                c.lineTo(size/6, -size/3);
+                c.lineTo(size/3, -size/6);
+                c.lineTo(size/3, size/3);
+                c.closePath();
+                c.lineWidth = size*0.06;
+                c.stroke();
+            } else if (cubeId === 12) {
+                c.beginPath();
+                c.moveTo(-size/3, size/4);
+                c.lineTo(-size/3, -size/6);
+                c.lineTo(-size/8, 0);
+                c.lineTo(0, -size/4);
+                c.lineTo(size/8, 0);
+                c.lineTo(size/3, -size/6);
+                c.lineTo(size/3, size/4);
+                c.closePath();
+                c.fill();
+            } else if (cubeId === 13) {
+                c.beginPath();
+                c.arc(-size/5, -size/6, size*0.08, 0, Math.PI*2);
+                c.arc(size/5, -size/6, size*0.08, 0, Math.PI*2);
+                c.fill();
+                c.beginPath();
+                c.arc(0, size/4, size*0.18, Math.PI, 0, false);
+                c.lineWidth = size*0.06;
+                c.stroke();
+            } else if (cubeId === 14) {
+                c.beginPath();
+                c.arc(0, 0, size/4, 0, Math.PI*2);
+                c.lineWidth = size*0.08;
+                c.stroke();
+                c.beginPath();
+                c.arc(0, 0, size/12, 0, Math.PI*2);
+                c.fill();
+            } else if (cubeId === 15) {
+                c.strokeRect(-size/4, -size/4, size/2, size/2);
+                c.beginPath();
+                c.moveTo(0, -size/2); c.lineTo(0, size/2);
+                c.moveTo(-size/2, 0); c.lineTo(size/2, 0);
+                c.lineWidth = size*0.04;
+                c.stroke();
+            } else if (cubeId === 16) {
+                c.beginPath();
+                c.arc(-size/4, -size/4, size/6, 0, Math.PI*2);
+                c.arc(size/4, -size/4, size/6, 0, Math.PI*2);
+                c.stroke();
+                c.beginPath();
+                c.arc(0, size/12, size/4, 0, Math.PI*2);
+                c.stroke();
+            } else if (cubeId === 17) {
+                c.beginPath();
+                for (let i = 0; i < 30; i++) {
+                    let angle = 0.4 * i;
+                    let r = (size * 0.35) * (i / 30);
+                    let rx = Math.cos(angle) * r;
+                    let ry = Math.sin(angle) * r;
+                    if (i === 0) c.moveTo(rx, ry);
+                    else c.lineTo(rx, ry);
+                }
+                c.lineWidth = size*0.06;
+                c.stroke();
+            } else if (cubeId === 18) {
+                c.beginPath();
+                c.moveTo(0, -size/3);
+                c.lineTo(-size/5, 0);
+                c.lineTo(0, 0);
+                c.lineTo(-size/10, size/3);
+                c.lineTo(size/5, 0);
+                c.lineTo(0, 0);
+                c.closePath();
+                c.fill();
+            } else if (cubeId === 19) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.beginPath();
+                c.moveTo(-size/3, 0); c.lineTo(size/3, 0);
+                c.moveTo(0, -size/3); c.lineTo(0, size/3);
+                c.lineWidth = size*0.04;
+                c.stroke();
+            } else if (cubeId === 20) {
+                c.beginPath();
+                c.moveTo(-size/3, -size/6);
+                c.bezierCurveTo(0, -size/3, size/3, -size/12, size/4, size/4);
+                c.lineTo(-size/3, size/4);
+                c.closePath();
+                c.fill();
+            } else if (cubeId === 21) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.fillRect(-size/4, -size/4, size/2, size/2);
+            } else if (cubeId === 22) {
+                c.beginPath();
+                c.arc(0, 0, size/3, 0, Math.PI*2);
+                c.stroke();
+                c.beginPath();
+                c.arc(0, 0, size/6, 0, Math.PI*2);
+                c.fill();
+            } else if (cubeId === 23) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.beginPath();
+                c.moveTo(-size/3, -size/3); c.lineTo(size/3, size/3);
+                c.stroke();
+            } else if (cubeId === 24) {
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.beginPath();
+                c.moveTo(size/3, -size/3); c.lineTo(-size/3, size/3);
+                c.stroke();
+            } else if (cubeId === 25) {
+                // Theory of Nothing custom geometry
+                c.strokeRect(-size/3, -size/3, size*0.66, size*0.66);
+                c.strokeRect(-size/4, -size/4, size/2, size/2);
+                c.strokeRect(-size/8, -size/8, size/4, size/4);
+            }
+
+            c.restore();
+        }
+
+        function openNewEditorModal() {
+            document.getElementById('new-level-modal').classList.remove('hidden');
+            document.getElementById('new-level-modal').classList.add('flex');
+        }
+
+        function closeNewEditorModal() {
+            document.getElementById('new-level-modal').classList.add('hidden');
+            document.getElementById('new-level-modal').classList.remove('flex');
+        }
+
+        function startLevelEditor() {
+            const title = document.getElementById('editor-title-input').value.trim() || "My New Level";
+            const initialMode = document.getElementById('editor-mode-select').value;
+            const difficulty = document.getElementById('editor-difficulty-select').value;
+            
+            closeNewEditorModal();
+
+            draftLevel = {
+                id: "custom-draft",
+                name: title,
+                creator: "You",
+                initialMode: initialMode,
+                difficulty: difficulty,
+                elements: []
+            };
+
+            document.getElementById('editor-current-title').innerText = title;
+            switchScreen('editor-workspace');
+
+            initEditorWorkspace();
+        }
+
+        function editExistingLevel() {
+            if (!draftLevel) {
+                draftLevel = {
+                    id: "custom-draft",
+                    name: "Level Draft",
+                    creator: "You",
+                    initialMode: "cube",
+                    difficulty: "N/R",
+                    elements: []
+                };
+            }
+            document.getElementById('editor-current-title').innerText = draftLevel.name;
+            switchScreen('editor-workspace');
+            initEditorWorkspace();
+        }
+
+        function renderEditorPalette() {
+            const container = document.getElementById('palette-container');
+            container.innerHTML = '';
+
+            EDITOR_PALETTE_ITEMS.forEach(item => {
+                const isSelected = selectedEditorItem === item.type;
+                const html = `
+                    <button onclick="selectEditorItem('${item.type}')" class="flex items-center gap-2 w-full p-2 rounded-lg text-left text-xs text-slate-300 hover:bg-slate-800 transition ${isSelected ? 'editor-item-selected bg-slate-800/80' : 'bg-slate-900/40'}">
+                        <i class="fa-solid ${item.icon} ${item.color} text-sm w-4 text-center"></i>
+                        <span class="truncate">${item.label}</span>
+                    </button>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function selectEditorItem(type) {
+            selectedEditorItem = type;
+            renderEditorPalette();
+        }
+
+        let editorScrollX = 0;
+        const TILE_SIZE = 40;
+        const GRID_ROWS = 10;
+        const GRID_COLS = 120;
+
+        function initEditorWorkspace() {
+            const gridContainer = document.getElementById('editor-grid');
+            gridContainer.innerHTML = '';
+
+            gridContainer.style.width = `${GRID_COLS * TILE_SIZE}px`;
+            gridContainer.style.height = `${GRID_ROWS * TILE_SIZE}px`;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = "flex absolute w-full pointer-events-none";
+                rowDiv.style.top = `${r * TILE_SIZE}px`;
+                rowDiv.style.height = `${TILE_SIZE}px`;
+
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const colBox = document.createElement('div');
+                    colBox.className = "border-r border-b border-slate-900/60 flex-shrink-0";
+                    colBox.style.width = `${TILE_SIZE}px`;
+                    colBox.style.height = `${TILE_SIZE}px`;
+                    rowDiv.appendChild(colBox);
+                }
+                gridContainer.appendChild(rowDiv);
+            }
+
+            const clickOverlay = document.createElement('div');
+            clickOverlay.className = "absolute inset-0 z-10";
+            clickOverlay.onclick = (e) => {
+                const rect = gridContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const col = Math.floor(clickX / TILE_SIZE);
+                const row = Math.floor(clickY / TILE_SIZE);
+
+                if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+                    toggleElementInEditor(col, row);
+                }
+            };
+            gridContainer.appendChild(clickOverlay);
+
+            const viewPort = document.getElementById('editor-viewport-container');
+            viewPort.onwheel = (e) => {
+                e.preventDefault();
+                viewPort.scrollLeft += e.deltaY;
+            };
+
+            redrawEditorElements();
+        }
+
+        function toggleElementInEditor(col, row) {
+            const mapY = (9 - row) * 40;
+            const mapX = col * 40;
+
+            const index = draftLevel.elements.findIndex(el => Math.floor(el.x / 40) === col && Math.floor(el.y / 40) === (9 - row));
+
+            if (index > -1) {
+                if (draftLevel.elements[index].type === selectedEditorItem) {
+                    draftLevel.elements.splice(index, 1);
+                } else {
+                    draftLevel.elements[index].type = selectedEditorItem;
+                }
+            } else {
+                draftLevel.elements.push({
+                    type: selectedEditorItem,
+                    x: mapX,
+                    y: mapY
+                });
+            }
+
+            redrawEditorElements();
+            playSynthSound('jump');
+        }
+
+        function redrawEditorElements() {
+            const previousRenders = document.querySelectorAll('.editor-element-token');
+            previousRenders.forEach(r => r.remove());
+
+            const gridContainer = document.getElementById('editor-grid');
+
+            draftLevel.elements.forEach((el) => {
+                const col = Math.floor(el.x / 40);
+                const row = 9 - Math.floor(el.y / 40);
+
+                const token = document.createElement('div');
+                token.className = "absolute editor-element-token z-20 flex items-center justify-center pointer-events-none";
+                token.style.left = `${col * TILE_SIZE}px`;
+                token.style.top = `${row * TILE_SIZE}px`;
+                token.style.width = `${TILE_SIZE}px`;
+                token.style.height = `${TILE_SIZE}px`;
+
+                const paletteDef = EDITOR_PALETTE_ITEMS.find(p => p.type === el.type);
+                if (paletteDef) {
+                    token.innerHTML = `<i class="fa-solid ${paletteDef.icon} ${paletteDef.color} text-lg drop-shadow-md"></i>`;
+                }
+
+                gridContainer.appendChild(token);
+            });
+        }
+
+        function clearEditorGrid() {
+            if (draftLevel) {
+                draftLevel.elements = [];
+                redrawEditorElements();
+            }
+        }
+
+        function playtestEditorLevel() {
+            if (!draftLevel || draftLevel.elements.length === 0) {
+                showModal("Grid Empty", "Place some blocks or spikes in the editor map first!", "fa-circle-exclamation", "Okay", "text-yellow-400");
+                return;
+            }
+
+            currentActiveLevel = {
+                id: "custom-draft-play",
+                name: draftLevel.name + " (Test)",
+                initialMode: draftLevel.initialMode,
+                difficulty: draftLevel.difficulty || "N/R",
+                elements: [...draftLevel.elements]
+            };
+
+            isLevelCreatorMode = true;
+            launchGameplayLoop();
+        }
+
+        function publishEditorLevel() {
+            if (!draftLevel || draftLevel.elements.length === 0) {
+                showModal("Grid Empty", "Cannot publish an empty level map. Place some obstacles!", "fa-circle-exclamation", "Got it", "text-yellow-400");
+                return;
+            }
+
+            const randomId = "custom-" + Date.now();
+            const levelToPublish = {
+                id: randomId,
+                name: draftLevel.name,
+                creator: "You",
+                initialMode: draftLevel.initialMode,
+                difficulty: draftLevel.difficulty || "N/R",
+                elements: [...draftLevel.elements]
+            };
+
+            customLevels = customLevels.filter(c => c.name !== draftLevel.name);
+            customLevels.push(levelToPublish);
+
+            renderOnlineLevelsList();
+            showModal("Published Successful!", "Your map was added to Online Level lists. Complete online levels to unlock high tier Master skins!", "fa-globe", "Superb");
+            switchScreen('editor-menu');
+        }
+
+        function exitEditorToCreatorHub() {
+            switchScreen('editor-menu');
+        }
+
+        function renderOnlineLevelsList() {
+            const container = document.getElementById('online-levels-list');
+            container.innerHTML = '';
+
+            const searchVal = document.getElementById('online-search-input').value.toLowerCase().trim();
+            const filterVal = document.getElementById('online-difficulty-filter').value;
+
+            const filtered = customLevels.filter(lvl => {
+                const matchesSearch = lvl.name.toLowerCase().includes(searchVal);
+                const matchesDiff = filterVal === 'ALL' || lvl.difficulty === filterVal;
+                return matchesSearch && matchesDiff;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-500 text-center py-4">No matching community maps. Try adjusting filters!</div>`;
+                return;
+            }
+
+            filtered.forEach(lvl => {
+                const faceId = `list-face-canvas-${lvl.id}`;
+                const iconId = `lvl-icon-canvas-${lvl.id}`;
+
+                const itemHtml = `
+                    <div class="flex items-center justify-between p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition">
+                        <div class="truncate mr-4 flex items-center gap-3">
+                            <!-- Player customized icon live preview -->
+                            <canvas id="${iconId}" width="36" height="36" class="w-9 h-9 border border-slate-700 bg-slate-950 rounded-lg flex-shrink-0"></canvas>
+                            <!-- Difficulty Face canvas -->
+                            <canvas id="${faceId}" width="24" height="24" class="w-6 h-6 flex-shrink-0"></canvas>
+                            <div class="truncate">
+                                <h4 class="font-bold text-white text-sm truncate">${lvl.name}</h4>
+                                <p class="text-[10px] text-cyan-400">By: ${lvl.creator} | Elements: ${lvl.elements.length}</p>
+                            </div>
+                        </div>
+                        <button onclick="launchOnlineLevel('${lvl.id}')" class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-500 hover:to-blue-400 text-white font-extrabold text-[10px] rounded-lg transition shadow-md">
+                            PLAY
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', itemHtml);
+
+                setTimeout(() => {
+                    const canvasEl = document.getElementById(faceId);
+                    if (canvasEl) {
+                        const cellCtx = canvasEl.getContext('2d');
+                        drawDifficultyFace(cellCtx, lvl.difficulty || "N/R", 12, 12, 18);
+                    }
+                }, 5);
+            });
+
+            setTimeout(drawAllActivePreviews, 10);
+        }
+
+        function launchOnlineLevel(levelId) {
+            const found = customLevels.find(c => c.id === levelId);
+            if (!found) return;
+
+            currentActiveLevel = found;
+            isLevelCreatorMode = false;
+            launchGameplayLoop();
+        }
+
+        function launchLevel(id, testMode = false) {
+            const lvl = OFFICIAL_LEVELS.find(l => l.id === id);
+            if (!lvl) return;
+
+            currentActiveLevel = {
+                id: lvl.id,
+                name: lvl.name,
+                initialMode: lvl.initialMode || 'cube',
+                difficulty: lvl.difficulty,
+                elements: [...lvl.elements]
+            };
+
+            USER_PROGRESS.playedLevels[lvl.id] = true;
+
+            isLevelCreatorMode = false;
+            launchGameplayLoop();
+        }
+
+        function launchGameplayLoop() {
+            if (!currentActiveLevel) return;
+
+            switchScreen('gameplay');
+
+            player.x = 100;
+            player.y = 0;
+            player.vx = 5.2;
+            player.vy = 0;
+            player.scale = 1.0;
+            player.size = 32;
+            player.rotation = 0;
+            player.isGrounded = true;
+            player.isDead = false;
+            player.mode = currentActiveLevel.initialMode || 'cube';
+            player.gravityDir = 1;
+            player.attempts = 1;
+            player.isMirrored = false;
+
+            practiceModeActive = false;
+            checkpoints = [];
+            updatePracticeButtons();
+
+            activeLevelElements = currentActiveLevel.elements.map(el => ({ ...el, activated: false }));
+            particles = [];
+
+            document.getElementById('gameplay-level-title').innerText = currentActiveLevel.name;
+            document.getElementById('level-progress-bar').style.width = '0%';
+            document.getElementById('level-progress-pct').innerText = '0%';
+
+            showAttemptLabel(1);
+
+            isPlaying = true;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function showAttemptLabel(count) {
+            const ind = document.getElementById('attempt-indicator');
+            ind.innerText = `ATTEMPT ${count}`;
+            ind.style.opacity = '1';
+            ind.style.transform = 'translate(-50%, -20px) scale(1)';
+
+            setTimeout(() => {
+                ind.style.opacity = '0';
+                ind.style.transform = 'translate(-50%, -40px) scale(0.8)';
+            }, 1800);
+        }
+
+        function togglePracticeMode() {
+            practiceModeActive = !practiceModeActive;
+            const btn = document.getElementById('practice-toggle-btn');
+            if (practiceModeActive) {
+                btn.className = "px-3 py-1.5 rounded-md font-bold text-xs bg-green-600 text-white border border-green-500 flex items-center gap-1 shadow-lg";
+                btn.innerHTML = `<i class="fa-solid fa-diamond"></i> Practice: ON`;
+                checkpoints = [];
+                placeCheckpoint();
+            } else {
+                btn.className = "px-3 py-1.5 rounded-md font-bold text-xs bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 hover:bg-slate-700 transition";
+                btn.innerHTML = `<i class="fa-solid fa-diamond text-green-400"></i> Practice: Off`;
+                checkpoints = [];
+            }
+            updatePracticeButtons();
+            playSynthSound('portal');
+        }
+
+        function updatePracticeButtons() {
+            const placeBtn = document.getElementById('practice-place-btn');
+            const deleteBtn = document.getElementById('practice-delete-btn');
+
+            if (practiceModeActive) {
+                placeBtn.classList.remove('hidden');
+                placeBtn.classList.add('flex');
+                deleteBtn.classList.remove('hidden');
+                deleteBtn.classList.add('flex');
+            } else {
+                placeBtn.classList.add('hidden');
+                placeBtn.classList.remove('flex');
+                deleteBtn.classList.add('hidden');
+                deleteBtn.classList.remove('flex');
+            }
+        }
+
+        function placeCheckpoint() {
+            if (!practiceModeActive || player.isDead) return;
+            
+            checkpoints.push({
+                x: player.x,
+                y: player.y,
+                mode: player.mode,
+                scale: player.scale,
+                size: player.size,
+                gravityDir: player.gravityDir,
+                vy: player.vy,
+                isMirrored: player.isMirrored
+            });
+
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: player.x + player.size/2,
+                    y: player.y + player.size/2,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: '#22c55e',
+                    size: Math.random() * 4 + 2,
+                    life: 30
+                });
+            }
+            playSynthSound('orb');
+        }
+
+        function deleteCheckpoint() {
+            if (!practiceModeActive || checkpoints.length <= 1) return;
+            checkpoints.pop();
+            playSynthSound('crash');
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            updatePhysics();
+            renderGame();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics() {
+            if (player.isDead) {
+                updateParticles();
+                return;
+            }
+
+            globalSawAngle += 0.08;
+
+            player.x += player.vx;
+
+            let gravityForce = 0.42 * player.gravityDir;
+            let terminalVelocity = 11;
+
+            if (player.scale < 1.0) {
+                gravityForce = 0.52 * player.gravityDir;
+            }
+
+            if (player.mode === 'cube' || player.mode === 'ball') {
+                player.vy += gravityForce;
+                if (Math.abs(player.vy) > terminalVelocity) {
+                    player.vy = terminalVelocity * Math.sign(player.vy);
+                }
+
+                player.y += player.vy;
+
+                let currentGroundY = 0;
+                if (player.gravityDir === 1) {
+                    if (player.y <= currentGroundY) {
+                        player.y = currentGroundY;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                    }
+                } else {
+                    let ceilingY = 320;
+                    if (player.y >= ceilingY) {
+                        player.y = ceilingY;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                    }
+                }
+
+                if (player.mode === 'cube') {
+                    if ((keys['Space'] || keys['ArrowUp'] || keys['TouchMouse']) && player.isGrounded) {
+                        player.vy = -8.5 * player.gravityDir;
+                        if (player.scale < 1.0) player.vy = -6.8 * player.gravityDir;
+                        player.isGrounded = false;
+                        playSynthSound('jump');
+                    }
+
+                    if (!player.isGrounded) {
+                        player.rotation += 0.08 * player.gravityDir;
+                    } else {
+                        let targetRot = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
+                        player.rotation += (targetRot - player.rotation) * 0.3;
+                    }
+                } else if (player.mode === 'ball') {
+                    player.rotation += 0.05 * player.gravityDir;
+                }
+
+            } else if (player.mode === 'ship') {
+                let isThrusting = keys['Space'] || keys['ArrowUp'] || keys['TouchMouse'];
+                
+                if (player.gravityDir === 1) {
+                    if (isThrusting) {
+                        player.vy -= 0.55;
+                    } else {
+                        player.vy += 0.4;
+                    }
+                } else {
+                    if (isThrusting) {
+                        player.vy += 0.55;
+                    } else {
+                        player.vy -= 0.4;
+                    }
+                }
+
+                if (Math.abs(player.vy) > 7) {
+                    player.vy = 7 * Math.sign(player.vy);
+                }
+
+                player.y += player.vy;
+                player.isGrounded = false;
+
+                if (player.y <= 0) {
+                    player.y = 0;
+                    player.vy = 0;
+                }
+                if (player.y >= 340) {
+                    player.y = 340;
+                    player.vy = 0;
+                }
+
+                let targetRot = player.vy * 0.05 * player.gravityDir;
+                player.rotation += (targetRot - player.rotation) * 0.2;
+
+            } else if (player.mode === 'ufo') {
+                // UFO: Fall under active gravity rules
+                player.vy += gravityForce;
+                if (Math.abs(player.vy) > terminalVelocity) {
+                    player.vy = terminalVelocity * Math.sign(player.vy);
+                }
+
+                player.y += player.vy;
+
+                // Ceiling & Floor cap
+                if (player.y <= 0) {
+                    player.y = 0;
+                    player.vy = 0;
+                    player.isGrounded = true;
+                }
+                if (player.y >= 340) {
+                    player.y = 340;
+                    player.vy = 0;
+                }
+
+                // Tilt slightly based on velocity
+                let targetRot = player.vy * 0.03 * player.gravityDir;
+                player.rotation += (targetRot - player.rotation) * 0.25;
+            }
+
+            let maxMapLength = 500;
+            activeLevelElements.forEach(el => {
+                if (el.type === 'finish') {
+                    maxMapLength = el.x;
+                }
+
+                let elSize = 40;
+                let buffer = 5;
+
+                let px1 = player.x + buffer;
+                let px2 = player.x + player.size - buffer;
+                let py1 = player.y + buffer;
+                let py2 = player.y + player.size - buffer;
+
+                let ex1 = el.x;
+                let ex2 = el.x + elSize;
+                let ey1 = el.y;
+                let ey2 = el.y + elSize;
+
+                if (px2 > ex1 && px1 < ex2 && py2 > ey1 && py1 < ey2) {
+                    
+                    if (el.type === 'spike' || el.type === 'black-spike') {
+                        triggerDeath();
+                    }
+                    else if (el.type === 'saw') {
+                        let distance = Math.hypot((player.x + player.size/2) - (el.x + 20), (player.y + player.size/2) - (el.y + 20));
+                        if (distance < (player.size/2 + 16)) {
+                            triggerDeath();
+                        }
+                    }
+                    else if (el.type === 'block' || el.type === 'black-block') {
+                        if (player.gravityDir === 1) {
+                            if (player.vy >= 0 && (player.y + 6) >= ey2) {
+                                player.y = ey2;
+                                player.vy = 0;
+                                player.isGrounded = true;
+                            } else {
+                                triggerDeath();
+                            }
+                        } else {
+                            if (player.vy <= 0 && (player.y + player.size - 6) <= ey1) {
+                                player.y = ey1 - player.size;
+                                player.vy = 0;
+                                player.isGrounded = true;
+                            } else {
+                                triggerDeath();
+                            }
+                        }
+                    }
+                    else if (el.type === 'yellow-pad' || el.type === 'pink-pad' || el.type === 'blue-pad') {
+                        if (!el.activated) {
+                            el.activated = true;
+                            if (el.type === 'yellow-pad') {
+                                player.vy = -11.5 * player.gravityDir;
+                            } else if (el.type === 'pink-pad') {
+                                player.vy = -8.2 * player.gravityDir;
+                            } else if (el.type === 'blue-pad') {
+                                player.gravityDir *= -1;
+                                player.vy = -6.5 * player.gravityDir;
+                            }
+                            player.isGrounded = false;
+                            playSynthSound('pad');
+
+                            for (let i = 0; i < 6; i++) {
+                                particles.push({
+                                    x: el.x + 20,
+                                    y: el.y + 10,
+                                    vx: (Math.random() - 0.5) * 4,
+                                    vy: -Math.random() * 5 * player.gravityDir,
+                                    color: (el.type === 'blue-pad') ? '#3b82f6' : ((el.type === 'yellow-pad') ? '#facc15' : '#f472b6'),
+                                    size: Math.random() * 3 + 1,
+                                    life: 25
+                                });
+                            }
+                        }
+                    }
+                    else if (el.type === 'ship-portal' && player.mode !== 'ship') {
+                        player.mode = 'ship';
+                        playSynthSound('portal');
+                        createPortalBurst(el.x, el.y, '#f472b6');
+                    }
+                    else if (el.type === 'cube-portal' && player.mode !== 'cube') {
+                        player.mode = 'cube';
+                        playSynthSound('portal');
+                        createPortalBurst(el.x, el.y, '#10b981');
+                    }
+                    else if (el.type === 'ball-portal' && player.mode !== 'ball') {
+                        player.mode = 'ball';
+                        playSynthSound('portal');
+                        createPortalBurst(el.x, el.y, '#a78bfa');
+                    }
+                    else if (el.type === 'ufo-portal' && player.mode !== 'ufo') {
+                        player.mode = 'ufo';
+                        playSynthSound('portal');
+                        createPortalBurst(el.x, el.y, '#e879f9');
+                    }
+                    else if (el.type === 'gravity-portal') {
+                        if (!el.activated) {
+                            el.activated = true;
+                            player.gravityDir *= -1;
+                            player.vy = -3 * player.gravityDir;
+                            playSynthSound('portal');
+                            createPortalBurst(el.x, el.y, '#4f46e5');
+                        }
+                    }
+                    else if (el.type === 'mirror-portal') {
+                        if (!el.activated) {
+                            el.activated = true;
+                            player.isMirrored = !player.isMirrored;
+                            playSynthSound('portal');
+                            createPortalBurst(el.x, el.y, '#f59e0b');
+                        }
+                    }
+                    else if (el.type === 'mini-portal') {
+                        if (player.scale !== 0.5) {
+                            player.scale = 0.5;
+                            player.size = 18;
+                            playSynthSound('portal');
+                            createPortalBurst(el.x, el.y, '#ec4899');
+                        }
+                    }
+                    else if (el.type === 'normal-portal') {
+                        if (player.scale !== 1.0) {
+                            player.scale = 1.0;
+                            player.size = 32;
+                            playSynthSound('portal');
+                            createPortalBurst(el.x, el.y, '#22d3ee');
+                        }
+                    }
+                    else if (el.type === 'finish') {
+                        triggerVictory();
+                    }
+                }
+            });
+
+            let progressRatio = Math.min(1, player.x / maxMapLength);
+            let progressPctStr = `${Math.floor(progressRatio * 100)}%`;
+            document.getElementById('level-progress-bar').style.width = progressPctStr;
+            document.getElementById('level-progress-pct').innerText = progressPctStr;
+
+            updateParticles();
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function createDeathExplosion(px, py) {
+            playSynthSound('crash');
+            for (let i = 0; i < 35; i++) {
+                particles.push({
+                    x: px,
+                    y: py,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    color: Math.random() > 0.4 ? USER_PROGRESS.primaryColor : USER_PROGRESS.secondaryColor,
+                    size: Math.random() * 7 + 3,
+                    life: Math.random() * 30 + 20
+                });
+            }
+        }
+
+        function createOrbBurst(ox, oy, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: ox + 20,
+                    y: oy + 20,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: color,
+                    size: Math.random() * 4 + 2,
+                    life: 20
+                });
+            }
+        }
+
+        function createPortalBurst(px, py, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: px + 20,
+                    y: py + 20,
+                    vx: Math.random() * 5 + 1,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: color,
+                    size: Math.random() * 5 + 1,
+                    life: 30
+                });
+            }
+        }
+
+        function triggerDeath() {
+            player.isDead = true;
+            createDeathExplosion(player.x + player.size/2, player.y + player.size/2);
+
+            setTimeout(() => {
+                respawn();
+            }, 1000);
+        }
+
+        function respawn() {
+            player.isDead = false;
+            particles = [];
+
+            if (practiceModeActive && checkpoints.length > 0) {
+                const cp = checkpoints[checkpoints.length - 1];
+                player.x = cp.x;
+                player.y = cp.y;
+                player.mode = cp.mode;
+                player.scale = cp.scale;
+                player.size = cp.size;
+                player.gravityDir = cp.gravityDir;
+                player.vy = cp.vy;
+                player.isMirrored = cp.isMirrored;
+            } else {
+                player.x = 100;
+                player.y = 0;
+                player.vy = 0;
+                player.scale = 1.0;
+                player.size = 32;
+                player.mode = currentActiveLevel.initialMode || 'cube';
+                player.gravityDir = 1;
+                player.isMirrored = false;
+            }
+
+            activeLevelElements.forEach(el => {
+                el.activated = false;
+            });
+
+            player.attempts++;
+            showAttemptLabel(player.attempts);
+        }
+
+        function triggerVictory() {
+            isPlaying = false;
+            playSynthSound('complete');
+
+            let currentLevelId = currentActiveLevel.id;
+            let titleString = "LEVEL COMPLETED! 🏆";
+            let descString = `You mastered ${currentActiveLevel.name}! Check your palette library.`;
+
+            if (typeof currentLevelId === 'number') {
+                if (!USER_PROGRESS.levelsCompleted[currentLevelId]) {
+                    USER_PROGRESS.levelsCompleted[currentLevelId] = { normal: false, practice: false };
+                }
+
+                if (practiceModeActive) {
+                    if (!USER_PROGRESS.levelsCompleted[currentLevelId].practice) {
+                        USER_PROGRESS.levelsCompleted[currentLevelId].practice = true;
+                        
+                        // Practice Mode rewards mapping (Ship 3, Cube 25, etc.)
+                        const unlockMap = { 1:14, 2:15, 3:16, 4:17, 5:18, 6:19, 7:20, 9:22, 10:24, 11:'ship-3', 12:25 };
+                        const rewardId = unlockMap[currentLevelId];
+                        
+                        if (rewardId === 'ship-3') {
+                            const shipData = SHIPS_DATA.find(s => s.id === 3);
+                            descString += `\n\n🎁 PRACTICE REWARD UNLOCKED: ${shipData.name}!`;
+                        } else if (typeof rewardId === 'number') {
+                            const cData = CUBES_DATA.find(c => c.id === rewardId);
+                            descString += `\n\n🎁 PRACTICE REWARD UNLOCKED: ${cData.name}!`;
+                        }
+                    }
+                } else {
+                    if (!USER_PROGRESS.levelsCompleted[currentLevelId].normal) {
+                        USER_PROGRESS.levelsCompleted[currentLevelId].normal = true;
+
+                        // Normal Mode rewards mapping (Ship 2, Ship 4, etc.)
+                        const unlockMap = { 1:5, 2:6, 3:7, 4:8, 5:9, 6:10, 7:11, 9:21, 10:23, 11:'ship-2', 12:'ship-4' };
+                        const rewardId = unlockMap[currentLevelId];
+                        
+                        if (rewardId === 'ship-2') {
+                            const sData = SHIPS_DATA.find(s => s.id === 2);
+                            descString += `\n\n🎁 NORMAL CHAMPION UNLOCKED: ${sData.name}!`;
+                        } else if (rewardId === 'ship-4') {
+                            const sData = SHIPS_DATA.find(s => s.id === 4);
+                            descString += `\n\n🎁 NORMAL CHAMPION UNLOCKED: ${sData.name}!`;
+                        } else if (typeof rewardId === 'number') {
+                            const cData = CUBES_DATA.find(c => c.id === rewardId);
+                            descString += `\n\n🎁 NORMAL CHAMPION UNLOCKED: ${cData.name}!`;
+                        }
+                    }
+                }
+            } else {
+                if (practiceModeActive) {
+                    USER_PROGRESS.customCompletedPractice++;
+                    if (USER_PROGRESS.customCompletedPractice === 10) {
+                        descString += `\n\n🎁 COSMETIC UNLOCKED: Cube 13 (Not Master) for completing 10 custom levels!`;
+                    }
+                } else {
+                    USER_PROGRESS.customCompletedNormal++;
+                    if (USER_PROGRESS.customCompletedNormal === 10) {
+                        descString += `\n\n🎁 COSMETIC UNLOCKED: Cube 12 (Master) for completing 10 custom levels!`;
+                    }
+                }
+            }
+
+            showModal(titleString, descString, "fa-trophy", "Fabulous", "text-green-400");
+            
+            if (currentLevelId === "custom-draft-play") {
+                switchScreen('editor-workspace');
+            } else if (typeof currentLevelId === 'string' && currentLevelId.startsWith('custom-')) {
+                switchScreen('editor-menu');
+            } else {
+                switchScreen('level-select');
+            }
+        }
+
+        function confirmExitGame() {
+            isPlaying = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            if (currentActiveLevel && currentActiveLevel.id === "custom-draft-play") {
+                switchScreen('editor-workspace');
+            } else if (currentActiveLevel && typeof currentActiveLevel.id === 'string' && currentActiveLevel.id.startsWith('custom-')) {
+                switchScreen('editor-menu');
+            } else {
+                switchScreen('level-select');
+            }
+        }
+
+        function renderGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Back-buffer Mirror Matrix Flip
+            if (player.isMirrored) {
+                ctx.save();
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            let timeVal = Date.now() * 0.001;
+            let bgColorShift = Math.sin(timeVal) * 8;
+            ctx.fillStyle = `rgb(10, ${20 + bgColorShift}, ${30 + bgColorShift})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "rgba(0, 255, 255, 0.04)";
+            ctx.lineWidth = 1.5;
+            let gridSpacing = 60;
+            let parallaxOffset = (player.x * 0.25) % gridSpacing;
+
+            for (let x = -parallaxOffset; x < canvas.width; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            let cameraX = player.x - 150;
+            let groundOffset = canvas.height * 0.72;
+
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, groundOffset, canvas.width, canvas.height - groundOffset);
+
+            ctx.strokeStyle = "#06b6d4";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, groundOffset);
+            ctx.lineTo(canvas.width, groundOffset);
+            ctx.stroke();
+
+            ctx.strokeStyle = "rgba(6, 182, 212, 0.15)";
+            ctx.lineWidth = 2;
+            let floorSpacing = 30;
+            let floorOffset = player.x % floorSpacing;
+            for (let fx = -floorOffset; fx < canvas.width; fx += floorSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(fx, groundOffset);
+                ctx.lineTo(fx - 40, canvas.height);
+                ctx.stroke();
+            }
+
+            if (practiceModeActive) {
+                checkpoints.forEach(cp => {
+                    let rx = cp.x - cameraX;
+                    let ry = groundOffset - cp.y - 20;
+
+                    ctx.save();
+                    ctx.translate(rx, ry);
+                    ctx.fillStyle = "#22c55e";
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "#22c55e";
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.lineTo(7, 0);
+                    ctx.lineTo(0, 10);
+                    ctx.lineTo(-7, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
+
+            activeLevelElements.forEach(el => {
+                let rx = el.x - cameraX;
+                let ry = groundOffset - el.y - 40;
+                let size = 40;
+
+                if (rx > -120 && rx < canvas.width + 120) {
+                    ctx.save();
+                    ctx.translate(rx, ry);
+
+                    if (el.type === 'spike') {
+                        ctx.fillStyle = "#eab308";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.moveTo(0, size);
+                        ctx.lineTo(size/2, 0);
+                        ctx.lineTo(size, size);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    else if (el.type === 'black-spike') {
+                        ctx.fillStyle = "#0f172a";
+                        ctx.strokeStyle = "#ef4444";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(0, size);
+                        ctx.lineTo(size/2, 2);
+                        ctx.lineTo(size, size);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    else if (el.type === 'saw') {
+                        ctx.translate(20, 20);
+                        ctx.rotate(globalSawAngle * 2);
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.fillStyle = '#1e293b';
+                        ctx.lineWidth = 3.5;
+                        
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 14, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.strokeStyle = '#ef4444';
+                        for (let a = 0; a < Math.PI*2; a += Math.PI/6) {
+                            ctx.beginPath();
+                            ctx.moveTo(Math.cos(a)*14, Math.sin(a)*14);
+                            ctx.lineTo(Math.cos(a+0.15)*22, Math.sin(a+0.15)*22);
+                            ctx.lineTo(Math.cos(a+0.3)*14, Math.sin(a+0.3)*14);
+                            ctx.stroke();
+                        }
+                    }
+                    else if (el.type === 'block') {
+                        ctx.fillStyle = "#3b82f6";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2.5;
+                        ctx.fillRect(0, 0, size, size);
+                        ctx.strokeRect(1.2, 1.2, size - 2.4, size - 2.4);
+                        ctx.fillStyle = "rgba(255,255,255,0.15)";
+                        ctx.fillRect(4, 4, size-8, size-8);
+                    }
+                    else if (el.type === 'black-block') {
+                        ctx.fillStyle = "#0f172a";
+                        ctx.strokeStyle = "#1e293b";
+                        ctx.lineWidth = 3;
+                        ctx.fillRect(0, 0, size, size);
+                        ctx.strokeRect(1.5, 1.5, size-3, size-3);
+                        ctx.fillStyle = "#ef4444";
+                        ctx.fillRect(size/2 - 4, size/2 - 4, 8, 8);
+                    }
+                    else if (el.type === 'yellow-pad') {
+                        ctx.fillStyle = el.activated ? "#fef08a" : "#ca8a04";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size, size/2, Math.PI, 0, false);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    else if (el.type === 'pink-pad') {
+                        ctx.fillStyle = el.activated ? "#fbcfe8" : "#db2777";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size, size/2, Math.PI, 0, false);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    else if (el.type === 'blue-pad') {
+                        ctx.fillStyle = el.activated ? "#bfdbfe" : "#2563eb";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size, size/2, Math.PI, 0, false);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    else if (el.type === 'yellow-orb') {
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = "#facc15";
+                        ctx.fillStyle = "rgba(250, 204, 21, 0.25)";
+                        ctx.strokeStyle = "#eab308";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#fef08a";
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    else if (el.type === 'pink-orb') {
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = "#ec4899";
+                        ctx.fillStyle = "rgba(236, 72, 153, 0.25)";
+                        ctx.strokeStyle = "#db2777";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#fbcfe8";
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    else if (el.type === 'blue-orb') {
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = "#3b82f6";
+                        ctx.fillStyle = "rgba(59, 130, 246, 0.25)";
+                        ctx.strokeStyle = "#2563eb";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#bfdbfe";
+                        ctx.beginPath();
+                        ctx.arc(size/2, size/2, size/6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    else if (el.type === 'ship-portal') {
+                        ctx.fillStyle = "rgba(219, 39, 119, 0.2)";
+                        ctx.strokeStyle = "#db2777";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("SHIP", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'cube-portal') {
+                        ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+                        ctx.strokeStyle = "#10b981";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("CUBE", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'ball-portal') {
+                        ctx.fillStyle = "rgba(139, 92, 246, 0.2)";
+                        ctx.strokeStyle = "#8b5cf6";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("BALL", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'ufo-portal') {
+                        ctx.fillStyle = "rgba(232, 121, 249, 0.2)";
+                        ctx.strokeStyle = "#e879f9";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("UFO", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'mini-portal') {
+                        ctx.fillStyle = "rgba(236, 72, 153, 0.2)";
+                        ctx.strokeStyle = "#ec4899";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("MINI", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'normal-portal') {
+                        ctx.fillStyle = "rgba(6, 182, 212, 0.2)";
+                        ctx.strokeStyle = "#06b6d4";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("SIZE", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'mirror-portal') {
+                        ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+                        ctx.strokeStyle = "#f59e0b";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("MIRR", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'gravity-portal') {
+                        ctx.fillStyle = "rgba(79, 70, 229, 0.2)";
+                        ctx.strokeStyle = "#4f46e5";
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.ellipse(size/2, size/2, size/3, size, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "bold 9px Russo One";
+                        ctx.fillText("GRAV", 8, size/2 + 3);
+                    }
+                    else if (el.type === 'finish') {
+                        ctx.fillStyle = "#22c55e";
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2.5;
+                        ctx.fillRect(0, 0, 4, size);
+                        ctx.beginPath();
+                        ctx.moveTo(4, 0);
+                        ctx.lineTo(size, size/4);
+                        ctx.lineTo(4, size/2);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+
+                    ctx.restore();
+                }
+            });
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - cameraX, groundOffset - p.y - p.size, p.size, p.size);
+            });
+
+            if (!player.isDead) {
+                let px = player.x - cameraX;
+                let py = groundOffset - player.y - player.size;
+
+                if (player.mode === 'cube' || player.mode === 'ball') {
+                    ctx.save();
+                    ctx.translate(px + player.size/2, py + player.size/2);
+                    ctx.rotate(player.rotation);
+
+                    if (player.mode === 'cube') {
+                        drawPlayerFace(ctx, 0, 0, player.size, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                    } else if (player.mode === 'ball') {
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = USER_PROGRESS.primaryColor;
+                        ctx.fillStyle = USER_PROGRESS.primaryColor;
+                        ctx.strokeStyle = USER_PROGRESS.secondaryColor;
+                        ctx.lineWidth = player.size * 0.08;
+
+                        ctx.beginPath();
+                        ctx.arc(0, 0, player.size/2, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                        ctx.moveTo(-player.size/2, 0); ctx.lineTo(player.size/2, 0);
+                        ctx.moveTo(0, -player.size/2); ctx.lineTo(0, player.size/2);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                } else if (player.mode === 'ship') {
+                    ctx.save();
+                    ctx.translate(px + player.size/2, py + player.size/2);
+                    ctx.rotate(player.rotation);
+
+                    // Jet flame
+                    ctx.fillStyle = "#f97316";
+                    ctx.beginPath();
+                    ctx.moveTo(-15, 0);
+                    ctx.lineTo(-28 - Math.random()*8, 4);
+                    ctx.lineTo(-15, 8);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Jet body
+                    drawShip(ctx, USER_PROGRESS.selectedShip, player.size, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+
+                    // Tiny active cube passenger
+                    ctx.save();
+                    ctx.scale(0.35, 0.35);
+                    drawPlayerFace(ctx, -2, -14, player.size, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                    ctx.restore();
+
+                    ctx.restore();
+                } else if (player.mode === 'ufo') {
+                    ctx.save();
+                    ctx.translate(px + player.size/2, py + player.size/2);
+                    ctx.rotate(player.rotation);
+
+                    // Saucer body disc
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = USER_PROGRESS.primaryColor;
+                    ctx.fillStyle = USER_PROGRESS.secondaryColor;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 4, 18, 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Glasstop dome
+                    ctx.fillStyle = "rgba(0, 255, 255, 0.35)";
+                    ctx.beginPath();
+                    ctx.arc(0, -1, 10, Math.PI, 0, false);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Micro customized cube face riding inside the dome
+                    ctx.save();
+                    ctx.scale(0.32, 0.32);
+                    drawPlayerFace(ctx, 0, -8, player.size, USER_PROGRESS.selectedCube, USER_PROGRESS.primaryColor, USER_PROGRESS.secondaryColor);
+                    ctx.restore();
+
+                    ctx.restore();
+                }
+            }
+
+            if (player.isMirrored) {
+                ctx.restore();
+            }
+        }
+    </script>
+</body>
+</html>
