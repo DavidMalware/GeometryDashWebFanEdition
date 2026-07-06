@@ -1,0 +1,46 @@
+Update v1.0/1.1/1.2
+New Things:
+- Level 1-7 (Stereo Madness, Back on Track, Polargeist, Dry Out, Base after Base, Can't Let Go, Jumper)
+- 20 Cubes Customization
+- Level Customization
+- Yellow Blocks, Spikes, Jump Pad and Jump Ring (Orb)
+- Cube and Ship Portal
+- Gravity Portals
+- Pink Jump pads and jump ring (orb)
+
+Update v1.3
+- Level 8 (Time Machine)
+- Mirror Portal
+- 2 new cubes
+
+Update v1.4
+- Level 9 (Cycles)
+- Ball Mode
+- Ball Portal
+- 2 new cube
+
+Update v1.5
+- Level 10 (Xstep)
+- Fixed Difficulties for Levels 1 to 9
+- Added Difficulty Faces
+- Blue Jump Pad and Jump Ring (Orb)
+- 2 new cubes
+
+Update v1.5.5
+- Level 11 (Clutterfunk)
+- Saw blades
+- Mini and normal potal
+- Demon Difficulty
+- 3 Ships Customizations
+
+Update v1.6
+- Level 12 (Theory of everything)
+- UFO Mode
+- UFO Portal
+- 1 new ship and 1 new cube
+
+Update v1.6.5
+- Level 13 (Electroman Adventures)
+- Breakable Blocks
+- Fake Spikes
+- 1 new ship and 1 new cube
